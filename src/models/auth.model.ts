@@ -34,8 +34,15 @@ const userModel = new mongoose.Schema({
         cardToken: { type: String },
         recipientCode: { type: String }
     },
-
-    kycVerified: { type: Boolean, default: false }
+    kyc: {
+        level: { type: Number, default: 0 },
+        bvn: { type: String },
+        nin: { type: String },
+        address: { type: String },
+        dateOfBirth: { type: Date },
+        isVerified: { type: Boolean, default: false },
+        verifiedAt: { type: Date }
+    }
 }, { timestamps: true})
 
 export const UserModel = mongoose.model("User", userModel);

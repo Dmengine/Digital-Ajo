@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import {connectDB} from './mongodb/ConnectDB';
 dotenv.config();
 import authRoutes from './routes/auth.route';
+import kycRoutes from './routes/kyc.route';
+import walletRoutes from './routes/wallet.route';
 
 
 const app = express();
@@ -10,6 +12,8 @@ app.use(express.json());
 app.use(express.urlencoded({ limit: '10mb'}))
 app.use(express.json({ limit: '10mb'}))
 app.use('/api', authRoutes);
+app.use('/api/kyc', kycRoutes);
+app.use('/api/wallet', walletRoutes);
 
 const PORT = process.env.PORT || 3000;
 

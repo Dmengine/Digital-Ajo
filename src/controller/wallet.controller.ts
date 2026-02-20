@@ -58,6 +58,12 @@ export const withdraw = async (req:Request, res:Response) => {
                 success: false
             })
         }
+        if (!user.kyc || user.kyc.level < 1) {
+            return res.status(403).send({
+                message: "Complete KYC verification before withdrawal.",
+                success: false
+            })
+        }
         await debitWallet(user._id.toString(), amount, "normal");
         await transferFunds(user.bankAccount.recipientCode, amount, "User Withdrawal");
         await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
