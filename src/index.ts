@@ -5,6 +5,7 @@ dotenv.config();
 import authRoutes from './routes/auth.route';
 import kycRoutes from './routes/kyc.route';
 import walletRoutes from './routes/wallet.route';
+import paymentRoutes from './routes/payment.route';
 
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json({ limit: '10mb'}))
 app.use('/api', authRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/payments', paymentRoutes);
 
 const PORT = process.env.PORT || 3000;
 
