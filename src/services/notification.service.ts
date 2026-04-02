@@ -1,6 +1,5 @@
-export const notify = async (userId: string, message: string) => {
-  console.log(`Notify ${userId}: ${message}`);
+export const notify = async (userId: string, message: string): Promise<void> => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[notify] ${userId}: ${message}`);
+  }
 };
-// Placeholder for actual notification logic (email, SMS, push notification, etc.)
-// In a real application, integrate with services like SendGrid, Twilio, Firebase, etc.
-// I will chang it later

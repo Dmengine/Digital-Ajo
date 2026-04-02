@@ -1,72 +1,65 @@
-import { Request, Response } from "express";
-import { UserModel } from "../models/auth.model";
+import type { Request, Response } from "express";
+import axios from "axios";
+import { UserModel } from "../models/user.model";
 import { initializeDeposit, transferFunds } from "../services/paystack.services";
 import { notify } from "../services/notification.service";
-import { creditWallet, debitWallet } from "../services/wallet.service";
+import { applyPaystackDeposit, debitWallet, reverseWalletDebit } from "../services/wallet.service";
+import { verifyPaystackSignature } from "../utils/paystackWebhook";
+import { env } from "../config/env";
+import { HttpError } from "../errors/HttpError";
+import { asyncHandler } from "../middleware/asyncHandler";
 
+export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
+  const { amount } = req.body as { amount: number };
+  const user = await UserModel.findById(req.userId);
+  if (!user) throw new HttpError(404, "User not found");
 
+  const url = await initializeDeposit(user.email, user._id.toString(), amount);
+  await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
+  res.json({ success: true, paymentURL: url });
+});
 
-export const initDeposit = async (req: Request, res: Response) => {
-    try {
-        const { amount} = req.body;
-        const user = await UserModel.findById((req as any).userId);
-        if(!user){
-            return res.status(400).send({
-                message: 'User not found',
-                success: false
-            })
-        }
-        const url = await initializeDeposit(user.email, user._id.toString(), amount)
-        await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
-        res.json({paymentURL: url})
-    } catch (error) {
-        console.log("Error in initDeposit controller", error);
-        res.status(500).send({ message: "Server Error" });
+export const webhook = asyncHandler(async (req: Request, res: Response) => {
+  const signature = req.headers["x-paystack-signature"];
+  const sig = Array.isArray(signature) ? signature[0] : signature;
+  const raw = req.rawBody;
+  if (!verifyPaystackSignature(raw, sig, env.paystackWebhookSecret())) {
+    throw new HttpError(400, "Invalid webhook signature");
+  }
+
+  const event = req.body as {
+    event?: string;
+    data?: { reference?: string; metadata?: { userId?: string }; amount?: number };
+  };
+  if (event?.event === "charge.success") {
+    const reference = event?.data?.reference;
+    if (typeof reference !== "string" || !reference.trim()) {
+      res.sendStatus(200);
+      return;
     }
-}
-
-export const webhook = async (req: Request, res:Response) => {
-    try {
-        const event = req.body;
-        if(event?.event === "charge.success"){
-            const userId = event?.data?.metadata?.userId;
-            const amount = event?.data?.amount / 100;
-            if(userId && amount > 0){
-                await creditWallet(userId, amount, "normal")
-            }
-        }
-        res.sendStatus(200);
-    } catch (error) {
-        console.log("Error in webhook controller", error);
-        res.status(500).send({ message: "Server Error" });
+    const userId = event?.data?.metadata?.userId;
+    const amountKobo = event?.data?.amount;
+    if (userId && typeof amountKobo === "number" && amountKobo > 0) {
+      const amount = amountKobo / 100;
+      await applyPaystackDeposit(userId, amount, reference);
     }
-}
+  }
 
-export const withdraw = async (req:Request, res:Response) => {
-    try {
-        const {amount} = req.body;
-        const user = await UserModel.findById((req as any).userId);
-        if(!user){
-            return res.status(400).send({
-                message: "User not found",
-                success: false,
-            })
-        }
-        if(!user.bankAccount?.recipientCode){
-            return res.status(400).send({
-                message: "No bank account linked",
-                success: false
-            })
-        }
-        await debitWallet(user._id.toString(), amount, "normal");
-        await transferFunds(user.bankAccount.recipientCode, amount, "User Withdrawal");
-        await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
-        res.status(200).send({
-            message: "Withdrawal successful",
-            success: true
-        })
-    } catch (error) {
-        console.log("Error in withdraw controller", error);
-        res.status(500).send({ message: "Server Error" });
-    }
-}
+  res.sendStatus(200);
+});
+
+export const withdraw = asyncHandler(async (req: Request, res: Response) => {
+  const { amount } = req.body as { amount: number };
+  const user = await UserModel.findById(req.userId);
+  if (!user) throw new HttpError(404, "User not found");
+  if (!user.bankAccount?.recipientCode) throw new HttpError(400, "No bank account linked");
+
+  await debitWallet(user._id.toString(), amount, "main");
+  await transferFunds(user.bankAccount.recipientCode, amount, "User Withdrawal");
+  await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
+
+  res.status(200).json({
+    success: true,
+    message: "Withdrawal successful",
+  });
+});

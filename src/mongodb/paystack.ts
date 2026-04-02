@@ -1,9 +1,17 @@
-import axios from "axios";
+import axios, { type AxiosInstance } from "axios";
+import { env } from "../config/env";
 
-export const paystack = axios.create({
-  baseURL: "https://api.paystack.co",
-  headers: {
-    Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-    "Content-Type": "application/json",
-  },
-});
+let client: AxiosInstance | null = null;
+
+export const getPaystack = (): AxiosInstance => {
+  if (!client) {
+    client = axios.create({
+      baseURL: "https://api.paystack.co",
+      headers: {
+        Authorization: `Bearer ${env.paystackSecret()}`,
+        "Content-Type": "application/json",
+      },
+    });
+  }
+  return client;
+};

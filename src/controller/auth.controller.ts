@@ -1,88 +1,63 @@
-import { Request, Response } from "express";
-import { UserModel } from "../models/auth.model";
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import type { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { UserModel } from "../models/user.model";
+import { env } from "../config/env";
+import { HttpError } from "../errors/HttpError";
+import { asyncHandler } from "../middleware/asyncHandler";
 
-export const Register = async (req: Request, res: Response) => {
-    try {
-        const { name, email, phone, password } = req.body;
+export const register = asyncHandler(async (req: Request, res: Response) => {
+  const { name, email, phone, password, username } = req.body as {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    username: string;
+  };
 
-        if ( !name || !email || !phone || !password) {
-            return res.status(400).send({
-                message: "Please provide all required fields",
-                success: false,
-            })
-        }
-        const existingUser = await UserModel.findOne({email})
-        if (existingUser) {
-            return res.status(400).send({
-                message: "User already exists",
-                success: false,
-            })
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await UserModel.create({
-            name,
-            email,
-            phone,
-            password: hashedPassword,
-            wallets: {
-                normal: 0,
-                emergency: 0,
-                fixed: [],
-            }
-        })
-        const token = jwt.sign({ id: newUser.id}, process.env.JWT_SECRET as string, { expiresIn: '7d'});
-        res.status(201).send({
-            message: 'User registered successfully',
-            success: true,
-            token,
-            newUser,
-        })
-    } catch (error) {
-        console.log("Error in register controller", error);
-        res.status(500).send({ message: "Server Error" });
-    }
-}
+  const existingUser = await UserModel.findOne({ email });
+  if (existingUser) throw new HttpError(400, "User already exists");
 
-export const Login = async (req:Request, res:Response) => {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).send({
-                message: "Please provide all required fields",
-                success: false,
-            })
-        }
-        const existingUser = await UserModel.findOne({ email})
-        if (!existingUser) {
-            return res.status(404).send({
-                message: "User not found",
-                success: false,
-            })
-        }
-        const comparePassword = await bcrypt.compare(password, existingUser.password)
-        if (!comparePassword) {
-            return res.status(400).send({
-                message: "Invalid credentials",
-                success: false,
-            })
-        }
+  const existingUsername = await UserModel.findOne({ username });
+  if (existingUsername) throw new HttpError(400, "Username already taken");
 
-        const token = jwt.sign({ id: existingUser.id}, process.env.JWT_SECRET as string, {
-            expiresIn: '7d'
-        })
-        res.status(200).send({
-            message: 'User logged in successfully',
-            success: true,
-            token,
-            existingUser,
-        })
-    } catch (error) {
-        console.log("Error in login controller", error);
-        res.status(500).send({
-            message: "Login failed",
-            success: false,
-        });
-    }
-}
+  const hashedPassword = await bcrypt.hash(password, 12);
+  const newUser = await UserModel.create({
+    name,
+    email,
+    phone,
+    username,
+    password: hashedPassword,
+    wallets: { main: 0, locked: [] },
+  });
+
+  const token = jwt.sign({ id: newUser.id }, env.jwtSecret(), { expiresIn: "7d" });
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+    token,
+    user: newUser.toJSON(),
+  });
+});
+
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const { emailOrUsername, password } = req.body as { emailOrUsername: string; password: string };
+
+  const existingUser = await UserModel.findOne({
+    $or: [{ email: emailOrUsername.toLowerCase() }, { username: emailOrUsername.toLowerCase() }],
+  }).select("+password");
+
+  if (!existingUser) throw new HttpError(401, "Invalid credentials");
+
+  const comparePassword = await bcrypt.compare(password, existingUser.password);
+  if (!comparePassword) throw new HttpError(401, "Invalid credentials");
+
+  const token = jwt.sign({ id: existingUser.id }, env.jwtSecret(), { expiresIn: "7d" });
+
+  res.status(200).json({
+    success: true,
+    message: "User logged in successfully",
+    token,
+    user: existingUser.toJSON(),
+  });
+});
