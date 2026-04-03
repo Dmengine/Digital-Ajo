@@ -13,9 +13,26 @@ const resolveApiBaseUrl = (): string => {
     const parsed = new URL(raw);
     return parsed.toString().replace(/\/+$/, "");
   } catch {
-    console.warn("Invalid VITE_API_BASE_URL detected. Falling back to default API base URL.", raw);
+    console.warn("Invalid VITE_API_BASE_URL detected. Falling back to default API base URL.");
     return defaultApiBaseUrl;
   }
+};
+
+const sanitizeAxiosError = (err: unknown): Error => {
+  if (!axios.isAxiosError(err)) return err instanceof Error ? err : new Error("Request failed");
+
+  const status = err.response?.status;
+  const responseMessage =
+    typeof err.response?.data?.message === "string"
+      ? err.response.data.message
+      : typeof err.response?.data?.error === "string"
+        ? err.response.data.error
+        : undefined;
+
+  const message = responseMessage || err.message || "Request failed";
+  const safeError = new Error(message);
+  (safeError as Error & { status?: number }).status = status;
+  return safeError;
 };
 
 export const api = axios.create({
@@ -40,7 +57,7 @@ api.interceptors.response.use(
       useAuthStore.getState().logout();
       if (typeof window !== "undefined") window.location.href = "/login";
     }
-    return Promise.reject(err);
+    return Promise.reject(sanitizeAxiosError(err));
   }
 );
 

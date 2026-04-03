@@ -98,8 +98,26 @@ exports.getGroupById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(
     const userId = req.userId;
     if (!userId)
         throw new HttpError_1.HttpError(401, "Authentication required");
+    const memberIdOf = (memberUser) => {
+        if (!memberUser)
+            return "";
+        if (typeof memberUser === "string")
+            return memberUser;
+        if (typeof memberUser === "object" && memberUser !== null && "_id" in memberUser) {
+            const id = memberUser._id;
+            if (typeof id === "string")
+                return id;
+            if (id && typeof id.toString === "function") {
+                return id.toString();
+            }
+        }
+        if (typeof memberUser.toString === "function") {
+            return memberUser.toString();
+        }
+        return "";
+    };
     const isCreator = group.createdBy.toString() === userId;
-    const isMember = group.members.some((m) => m.user.toString() === userId);
+    const isMember = group.members.some((m) => memberIdOf(m.user) === userId);
     if (!isCreator && !isMember)
         throw new HttpError_1.HttpError(403, "Access denied");
     res.status(200).json({
