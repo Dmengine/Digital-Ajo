@@ -23,10 +23,19 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/+$/, "");
+const configuredOrigins =
+  env.corsOrigin === "*"
+    ? true
+    : env.corsOrigin
+        .split(",")
+        .map((s) => normalizeOrigin(s))
+        .filter(Boolean);
+
 app.use(helmet());
 app.use(
   cors({
-    origin: env.corsOrigin === "*" ? true : env.corsOrigin.split(",").map((s) => s.trim()),
+    origin: configuredOrigins,
     credentials: true,
   })
 );

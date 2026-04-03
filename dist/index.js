@@ -24,9 +24,16 @@ catch (e) {
 }
 const app = (0, express_1.default)();
 app.set("trust proxy", 1);
+const normalizeOrigin = (origin) => origin.trim().replace(/\/+$/, "");
+const configuredOrigins = env_1.env.corsOrigin === "*"
+    ? true
+    : env_1.env.corsOrigin
+        .split(",")
+        .map((s) => normalizeOrigin(s))
+        .filter(Boolean);
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: env_1.env.corsOrigin === "*" ? true : env_1.env.corsOrigin.split(",").map((s) => s.trim()),
+    origin: configuredOrigins,
     credentials: true,
 }));
 app.use(express_1.default.json({

@@ -14,6 +14,28 @@ const paystackKey = (): string => {
   return required("PAYSTACK_SECRET");
 };
 
+const resolveCorsOrigin = (): string => {
+  const explicit = process.env.CORS_ORIGIN?.trim();
+  if (explicit) return explicit;
+
+  // Render commonly exposes this service URL automatically.
+  const renderUrl = process.env.RENDER_EXTERNAL_URL?.trim();
+  if (renderUrl) return renderUrl;
+
+  // Optional aliases some deployments use.
+  const frontendUrl = process.env.FRONTEND_URL?.trim();
+  if (frontendUrl) return frontendUrl;
+
+  const nodeEnv = process.env.NODE_ENV ?? "development";
+  if (nodeEnv === "production") {
+    throw new Error(
+      "Set CORS_ORIGIN (or FRONTEND_URL). On Render you can also rely on RENDER_EXTERNAL_URL if available."
+    );
+  }
+
+  return "*";
+};
+
 export const env = {
   // MVP runs in "test" mode by default (NOT production) unless explicitly set.
   // This prevents production-only fallbacks (e.g., CORS) from being triggered silently.
@@ -36,12 +58,5 @@ export const env = {
   paystackSecret: () => paystackKey(),
   paystackWebhookSecret: () =>
     process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || paystackKey(),
-  corsOrigin: (() => {
-    const v = process.env.CORS_ORIGIN?.trim();
-    if (v) return v;
-    if ((process.env.NODE_ENV ?? "development") === "production") {
-      throw new Error("CORS_ORIGIN must be set in production");
-    }
-    return "*";
-  })(),
+  corsOrigin: resolveCorsOrigin(),
 };
