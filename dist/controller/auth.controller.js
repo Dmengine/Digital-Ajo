@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.login = exports.register = void 0;
+exports.uploadAvatar = exports.submitTier1Kyc = exports.me = exports.logout = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = require("../models/user.model");
@@ -80,4 +80,48 @@ exports.logout = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
     res.status(200).json({ success: true, message: "Logged out successfully" });
+}));
+exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const userId = req.userId;
+    const user = yield user_model_1.UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage");
+    if (!user)
+        throw new HttpError_1.HttpError(404, "User not found");
+    res.status(200).json({
+        success: true,
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            username: user.username,
+            kycTier: user.kycTier,
+            basicKycCompleted: user.basicKycCompleted,
+            profileImage: (_a = user.profileImage) !== null && _a !== void 0 ? _a : null,
+        },
+    });
+}));
+exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.userId;
+    const { accountNumber, bankName } = req.body;
+    const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, {
+        kycTier: 1,
+        basicKycCompleted: true,
+    }, { new: true });
+    if (!user)
+        throw new HttpError_1.HttpError(404, "User not found");
+    // Keep updates separate to avoid accidental overwrites of other bank fields.
+    if (!user.bankAccount)
+        user.bankAccount = {};
+    user.bankAccount.accountNumber = accountNumber;
+    user.bankAccount.bankName = bankName;
+    yield user.save();
+    res.status(200).json({ success: true, message: "Tier 1 KYC submitted successfully" });
+}));
+exports.uploadAvatar = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.userId;
+    const { imageDataUrl } = req.body;
+    const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, { profileImage: imageDataUrl }, { new: true });
+    if (!user)
+        throw new HttpError_1.HttpError(404, "User not found");
+    res.status(200).json({ success: true, message: "Avatar updated successfully" });
 }));

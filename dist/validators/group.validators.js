@@ -12,7 +12,7 @@ exports.createGroupSchema = joi_1.default.object({
     contributionAmount: joi_1.default.number().positive().max(10000000).required(),
     frequency: joi_1.default.string().valid("daily", "weekly", "monthly").required(),
     startDate: joi_1.default.date().iso().required(),
-    members: joi_1.default.array().items(joi_1.default.string().trim().lowercase().min(3).max(32)).min(1).max(200).required(),
+    members: joi_1.default.array().items(joi_1.default.string().trim().lowercase().min(3).max(32)).min(0).max(200).required(),
 });
 exports.joinGroupSchema = joi_1.default.object({
     inviteCode: joi_1.default.string().trim().min(8).max(64).required(),

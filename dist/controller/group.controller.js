@@ -32,8 +32,7 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
         throw new HttpError_1.HttpError(404, "User not found");
     const creatorCheck = (0, eligibility_service_1.assessGroupEligibility)({
         kycTier: creator.kycTier,
-        reliabilityScore: creator.reliabilityScore,
-        completedAjoCycles: creator.completedAjoCycles,
+        basicKycCompleted: creator.basicKycCompleted,
     }, groupType);
     if (!creatorCheck.ok)
         throw new HttpError_1.HttpError(403, creatorCheck.reason);
@@ -43,18 +42,22 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     for (const u of users) {
         const check = (0, eligibility_service_1.assessGroupEligibility)({
             kycTier: u.kycTier,
-            reliabilityScore: u.reliabilityScore,
-            completedAjoCycles: u.completedAjoCycles,
+            basicKycCompleted: u.basicKycCompleted,
         }, groupType);
         if (!check.ok)
             throw new HttpError_1.HttpError(400, `Member ${u.username}: ${check.reason}`);
     }
-    const roster = users.map((u, i) => ({
-        user: u._id,
-        order: i + 1,
-        hasReceived: false,
-        bufferHeld: 0,
-    }));
+    // MVP: creator is always the first member (order 1). `members` in the request are additional members.
+    const additionalUsers = users.filter((u) => u._id.toString() !== creatorId);
+    const roster = [
+        { user: creator._id, order: 1, hasReceived: false, bufferHeld: 0 },
+        ...additionalUsers.map((u, i) => ({
+            user: u._id,
+            order: i + 2,
+            hasReceived: false,
+            bufferHeld: 0,
+        })),
+    ];
     const inviteCode = generateInviteCode();
     const bufferRequired = (0, eligibility_service_1.bufferRequiredForGroupType)(groupType);
     const newGroup = yield groupAjo_model_1.GroupAjoModel.create({
@@ -135,8 +138,7 @@ exports.joinGroupByInvite = (0, asyncHandler_1.asyncHandler)((req, res) => __awa
         throw new HttpError_1.HttpError(404, "User not found");
     const check = (0, eligibility_service_1.assessGroupEligibility)({
         kycTier: user.kycTier,
-        reliabilityScore: user.reliabilityScore,
-        completedAjoCycles: user.completedAjoCycles,
+        basicKycCompleted: user.basicKycCompleted,
     }, group.groupType);
     if (!check.ok)
         throw new HttpError_1.HttpError(403, check.reason);

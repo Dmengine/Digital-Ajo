@@ -30,6 +30,8 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json({
     limit: "10mb",
     verify: (req, _res, buf) => {
+        // `req.rawBody` is attached for Paystack webhook signature verification.
+        // Use a cast to avoid ts-node-dev type-resolution issues.
         req.rawBody = buf;
     },
 }));

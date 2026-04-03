@@ -36,6 +36,8 @@ const requireAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
             res.status(401).json({ success: false, message: "Invalid or expired token" });
             return;
         }
+        // ts-node-dev in this repo may not automatically load our global Request augmentation.
+        // Cast keeps runtime behavior unchanged while unblocking compilation.
         req.userId = id;
         next();
     }

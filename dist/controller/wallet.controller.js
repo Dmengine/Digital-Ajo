@@ -8,75 +8,87 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.withdraw = exports.webhook = exports.initDeposit = void 0;
-const axios_1 = __importDefault(require("axios"));
 const user_model_1 = require("../models/user.model");
-const paystack_services_1 = require("../services/paystack.services");
 const notification_service_1 = require("../services/notification.service");
 const wallet_service_1 = require("../services/wallet.service");
+const paystack_services_1 = require("../services/paystack.services");
 const paystackWebhook_1 = require("../utils/paystackWebhook");
 const env_1 = require("../config/env");
 const HttpError_1 = require("../errors/HttpError");
 const asyncHandler_1 = require("../middleware/asyncHandler");
 exports.initDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { amount } = req.body;
-    const user = yield user_model_1.UserModel.findById(req.userId);
-    if (!user)
-        throw new HttpError_1.HttpError(404, "User not found");
-    const url = yield (0, paystack_services_1.initializeDeposit)(user.email, user._id.toString(), amount);
-    yield (0, notification_service_1.notify)(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
-    res.json({ success: true, paymentURL: url });
-}));
-exports.webhook = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
-    const signature = req.headers["x-paystack-signature"];
-    const sig = Array.isArray(signature) ? signature[0] : signature;
-    const raw = req.rawBody;
-    if (!(0, paystackWebhook_1.verifyPaystackSignature)(raw, sig, env_1.env.paystackWebhookSecret())) {
-        throw new HttpError_1.HttpError(400, "Invalid webhook signature");
-    }
-    const event = req.body;
-    if ((event === null || event === void 0 ? void 0 : event.event) === "charge.success") {
-        const reference = (_a = event === null || event === void 0 ? void 0 : event.data) === null || _a === void 0 ? void 0 : _a.reference;
-        if (typeof reference !== "string" || !reference.trim()) {
-            res.sendStatus(200);
-            return;
-        }
-        const userId = (_c = (_b = event === null || event === void 0 ? void 0 : event.data) === null || _b === void 0 ? void 0 : _b.metadata) === null || _c === void 0 ? void 0 : _c.userId;
-        const amountKobo = (_d = event === null || event === void 0 ? void 0 : event.data) === null || _d === void 0 ? void 0 : _d.amount;
-        if (userId && typeof amountKobo === "number" && amountKobo > 0) {
-            const amount = amountKobo / 100;
-            yield (0, wallet_service_1.applyPaystackDeposit)(userId, amount, reference);
-        }
-    }
-    res.sendStatus(200);
-}));
-exports.withdraw = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { amount } = req.body;
     const user = yield user_model_1.UserModel.findById(req.userId);
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
-    if (!((_a = user.bankAccount) === null || _a === void 0 ? void 0 : _a.recipientCode))
-        throw new HttpError_1.HttpError(400, "No bank account linked");
-    yield (0, wallet_service_1.debitWallet)(user._id.toString(), amount, "main");
+    // Real deposit via Paystack (customer pays from their bank/card).
+    let paymentURL;
     try {
-        yield (0, paystack_services_1.transferFunds)(user.bankAccount.recipientCode, amount, "User Withdrawal");
+        paymentURL = yield (0, paystack_services_1.initializeDeposit)(user.email, user._id.toString(), amount);
     }
     catch (err) {
-        yield (0, wallet_service_1.reverseWalletDebit)(user._id.toString(), amount, {
-            reason: "paystack_transfer_failed",
-            amount,
-        });
-        if (axios_1.default.isAxiosError(err)) {
-            throw new HttpError_1.HttpError(502, "Bank transfer failed; your wallet has been refunded.");
+        const status = (_a = err === null || err === void 0 ? void 0 : err.response) === null || _a === void 0 ? void 0 : _a.status;
+        if (status === 401 || status === 403) {
+            // Do not leak secrets; point to configuration/mode issues instead.
+            throw new HttpError_1.HttpError(502, "Paystack rejected credentials. Check PAYSTACK_SECRET (test vs live).");
         }
-        throw new HttpError_1.HttpError(502, "Bank transfer failed; your wallet has been refunded.");
+        throw new HttpError_1.HttpError(502, "Failed to initialize Paystack deposit.");
     }
+    yield (0, notification_service_1.notify)(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
+    res.json({ success: true, paymentURL });
+}));
+exports.webhook = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    // MVP: generic signed webhook verification. Accept both headers for backward compatibility.
+    const signature = ((_a = req.headers["x-webhook-signature"]) !== null && _a !== void 0 ? _a : req.headers["x-paystack-signature"]);
+    const sig = Array.isArray(signature) ? signature[0] : signature;
+    const raw = req.rawBody;
+    if (!(0, paystackWebhook_1.verifyPaystackSignature)(raw, sig, env_1.env.webhookSecret())) {
+        throw new HttpError_1.HttpError(400, "Invalid webhook signature");
+    }
+    const event = req.body;
+    const eventName = typeof (event === null || event === void 0 ? void 0 : event.event) === "string" ? event.event : undefined;
+    // Supported event names:
+    // - charge.success (legacy Paystack-style): amount is in kobo
+    // - deposit.completed / deposit.success (MVP): amount is in naira
+    const isDepositEvent = eventName === "charge.success" || eventName === "deposit.completed" || eventName === "deposit.success";
+    if (isDepositEvent) {
+        const reference = (_c = (_b = event === null || event === void 0 ? void 0 : event.data) === null || _b === void 0 ? void 0 : _b.reference) !== null && _c !== void 0 ? _c : (_e = (_d = event === null || event === void 0 ? void 0 : event.data) === null || _d === void 0 ? void 0 : _d.metadata) === null || _e === void 0 ? void 0 : _e.reference;
+        const userId = (_h = (_g = (_f = event === null || event === void 0 ? void 0 : event.data) === null || _f === void 0 ? void 0 : _f.metadata) === null || _g === void 0 ? void 0 : _g.userId) !== null && _h !== void 0 ? _h : (_k = (_j = event === null || event === void 0 ? void 0 : event.data) === null || _j === void 0 ? void 0 : _j.metadata) === null || _k === void 0 ? void 0 : _k.userID;
+        const amountRaw = (_l = event === null || event === void 0 ? void 0 : event.data) === null || _l === void 0 ? void 0 : _l.amount;
+        if (typeof reference !== "string" || !reference.trim()) {
+            res.sendStatus(200);
+            return;
+        }
+        if (typeof userId !== "string" || !userId.trim()) {
+            res.sendStatus(200);
+            return;
+        }
+        if (typeof amountRaw !== "number" || !Number.isFinite(amountRaw) || amountRaw <= 0) {
+            res.sendStatus(200);
+            return;
+        }
+        const amount = eventName === "charge.success" ? amountRaw / 100 : amountRaw;
+        if (amount <= 0) {
+            res.sendStatus(200);
+            return;
+        }
+        yield (0, wallet_service_1.applyPaystackDeposit)(userId, amount, reference);
+    }
+    res.sendStatus(200);
+}));
+exports.withdraw = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const { amount } = req.body;
+    const user = yield user_model_1.UserModel.findById(req.userId);
+    if (!user)
+        throw new HttpError_1.HttpError(404, "User not found");
+    if (!((_a = user.bankAccount) === null || _a === void 0 ? void 0 : _a.accountNumber) || !((_b = user.bankAccount) === null || _b === void 0 ? void 0 : _b.bankName))
+        throw new HttpError_1.HttpError(400, "No bank account linked");
+    yield (0, wallet_service_1.debitWallet)(user._id.toString(), amount, "main");
     yield (0, notification_service_1.notify)(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
     res.status(200).json({
         success: true,
