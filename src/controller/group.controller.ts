@@ -150,6 +150,19 @@ export const browseOpenGroups = asyncHandler(async (_req: Request, res: Response
         $or: [{ createdBy: userObjectId }, { "members.user": userObjectId }],
       },
     },
+    {
+      $lookup: {
+        from: "groupmessages",
+        let: { gid: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$groupAjo", "$$gid"] } } },
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 },
+          { $project: { _id: 0, createdAt: 1 } },
+        ],
+        as: "lastMessage",
+      },
+    },
     { $sort: { createdAt: -1 } },
     { $limit: 50 },
     {
@@ -162,6 +175,7 @@ export const browseOpenGroups = asyncHandler(async (_req: Request, res: Response
         startDate: 1,
         createdAt: 1,
         memberCount: { $size: "$members" },
+        lastMessageAt: { $ifNull: [{ $arrayElemAt: ["$lastMessage.createdAt", 0] }, null] },
       },
     },
   ]);

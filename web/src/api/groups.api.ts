@@ -14,6 +14,7 @@ export type GroupBrowseItem = {
   startDate: string;
   createdAt: string;
   memberCount: number;
+  lastMessageAt?: string | null;
 };
 
 export type CreateGroupBody = {

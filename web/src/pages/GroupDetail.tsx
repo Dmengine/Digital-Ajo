@@ -29,6 +29,8 @@ function tone(groupType: GroupType) {
   }
 }
 
+const groupSeenKey = (groupId: string) => `group.lastSeen.${groupId}`;
+
 export default function GroupDetail() {
   const { id } = useParams();
   const groupId = id ? String(id) : "";
@@ -96,6 +98,16 @@ export default function GroupDetail() {
   }, [msgQ.data?.messages]);
 
   useEffect(() => {
+    if (!groupId) return;
+    if (!msgQ.data?.messages?.length) return;
+
+    const latest = msgQ.data.messages[msgQ.data.messages.length - 1];
+    if (latest?.createdAt) {
+      localStorage.setItem(groupSeenKey(groupId), latest.createdAt);
+    }
+  }, [groupId, msgQ.data?.messages]);
+
+  useEffect(() => {
     if (!token || !groupId) return;
 
     const socket = io(getSocketBaseUrl(), {
@@ -124,6 +136,9 @@ export default function GroupDetail() {
     });
 
     socket.on("chat:message", (msg: GroupChatMessage) => {
+      if (msg?.createdAt && groupId) {
+        localStorage.setItem(groupSeenKey(groupId), msg.createdAt);
+      }
       setChatMessages((prev) => {
         const mid = String(msg._id);
         if (prev.some((m) => String(m._id) === mid)) return prev;

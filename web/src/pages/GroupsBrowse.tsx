@@ -18,6 +18,20 @@ function badgeTone(type: GroupType) {
   }
 }
 
+const groupSeenKey = (groupId: string) => `group.lastSeen.${groupId}`;
+
+function isUnread(groupId: string | undefined, lastMessageAt?: string | null): boolean {
+  if (!groupId || !lastMessageAt) return false;
+  const lastMessageTs = Date.parse(lastMessageAt);
+  if (!Number.isFinite(lastMessageTs)) return false;
+
+  const seenRaw = localStorage.getItem(groupSeenKey(groupId));
+  if (!seenRaw) return true;
+  const seenTs = Date.parse(seenRaw);
+  if (!Number.isFinite(seenTs)) return true;
+  return lastMessageTs > seenTs;
+}
+
 export default function GroupsBrowse() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -25,6 +39,8 @@ export default function GroupsBrowse() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["groups", "browse"],
     queryFn: browseGroups,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   const groups = data?.groups ?? [];
@@ -106,7 +122,14 @@ export default function GroupsBrowse() {
           <div key={g._id ?? g.name} className="rounded-2xl border border-white/10 bg-white/70 p-5 shadow-sm dark:bg-slate-900/40">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-lg font-semibold text-slate-950 dark:text-white">{g.name}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg font-semibold text-slate-950 dark:text-white">{g.name}</div>
+                  {isUnread(g._id, g.lastMessageAt) ? (
+                    <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+                      New message
+                    </span>
+                  ) : null}
+                </div>
                 <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{g.description || "—"}</div>
               </div>
               <div className={["rounded-xl px-3 py-1 text-xs font-semibold", badgeTone(g.groupType)].join(" ")}>
