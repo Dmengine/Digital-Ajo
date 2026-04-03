@@ -90,3 +90,56 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   if (!user) throw new HttpError(404, "User not found");
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
+
+export const me = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).userId as string;
+  const user = await UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage");
+  if (!user) throw new HttpError(404, "User not found");
+
+  res.status(200).json({
+    success: true,
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      kycTier: user.kycTier,
+      basicKycCompleted: user.basicKycCompleted,
+      profileImage: user.profileImage ?? null,
+    },
+  });
+});
+
+export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).userId as string;
+  const { accountNumber, bankName } = req.body as { accountNumber: string; bankName: string };
+
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    {
+      kycTier: 1,
+      basicKycCompleted: true,
+    },
+    { new: true }
+  );
+
+  if (!user) throw new HttpError(404, "User not found");
+
+  // Keep updates separate to avoid accidental overwrites of other bank fields.
+  if (!user.bankAccount) user.bankAccount = {};
+  user.bankAccount.accountNumber = accountNumber;
+  user.bankAccount.bankName = bankName;
+  await user.save();
+
+  res.status(200).json({ success: true, message: "Tier 1 KYC submitted successfully" });
+});
+
+export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).userId as string;
+  const { imageDataUrl } = req.body as { imageDataUrl: string };
+
+  const user = await UserModel.findByIdAndUpdate(userId, { profileImage: imageDataUrl }, { new: true });
+  if (!user) throw new HttpError(404, "User not found");
+
+  res.status(200).json({ success: true, message: "Avatar updated successfully" });
+});

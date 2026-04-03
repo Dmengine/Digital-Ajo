@@ -7,7 +7,7 @@ export const createGroupSchema = Joi.object({
   contributionAmount: Joi.number().positive().max(10_000_000).required(),
   frequency: Joi.string().valid("daily", "weekly", "monthly").required(),
   startDate: Joi.date().iso().required(),
-  members: Joi.array().items(Joi.string().trim().lowercase().min(3).max(32)).min(1).max(200).required(),
+  members: Joi.array().items(Joi.string().trim().lowercase().min(3).max(32)).min(0).max(200).required(),
 });
 
 export const joinGroupSchema = Joi.object({

@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
     reliabilityScore: { type: Number, default: 100, min: 0, max: 100 },
     completedAjoCycles: { type: Number, default: 0, min: 0 },
     tokenVersion: { type: Number, default: 0, min: 0 },
+    /** MVP: Basic KYC must be completed before a user can create/join groups. */
+    basicKycCompleted: { type: Boolean, default: false },
+    /** MVP avatar (data URL or URL). For production, store in object storage. */
+    profileImage: { type: String },
     bankAccount: {
       accountNumber: { type: String },
       bankName: { type: String },

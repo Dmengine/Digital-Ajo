@@ -31,8 +31,7 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
   const creatorCheck = assessGroupEligibility(
     {
       kycTier: creator.kycTier as 1 | 2 | 3,
-      reliabilityScore: creator.reliabilityScore,
-      completedAjoCycles: creator.completedAjoCycles,
+      basicKycCompleted: creator.basicKycCompleted,
     },
     groupType
   );
@@ -45,8 +44,7 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
     const check = assessGroupEligibility(
       {
         kycTier: u.kycTier as 1 | 2 | 3,
-        reliabilityScore: u.reliabilityScore,
-        completedAjoCycles: u.completedAjoCycles,
+        basicKycCompleted: u.basicKycCompleted,
       },
       groupType
     );
@@ -150,8 +148,7 @@ export const joinGroupByInvite = asyncHandler(async (req: Request, res: Response
   const check = assessGroupEligibility(
     {
       kycTier: user.kycTier as 1 | 2 | 3,
-      reliabilityScore: user.reliabilityScore,
-      completedAjoCycles: user.completedAjoCycles,
+      basicKycCompleted: user.basicKycCompleted,
     },
     group.groupType as GroupRiskType
   );

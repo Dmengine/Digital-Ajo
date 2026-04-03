@@ -1,36 +1,26 @@
 import { describe, it, expect } from "vitest";
 import { assessGroupEligibility, bufferRequiredForGroupType } from "./eligibility.service";
 
-const baseUser = { kycTier: 1 as const, reliabilityScore: 100, completedAjoCycles: 3 };
+const baseUser = { kycTier: 1 as const, basicKycCompleted: true };
 
 describe("assessGroupEligibility", () => {
-  it("allows a strong Tier-1 user into low groups", () => {
-    expect(assessGroupEligibility({ ...baseUser, reliabilityScore: 60, completedAjoCycles: 0 }, "low").ok).toBe(true);
-  });
-
-  it("rejects low score for low tier groups", () => {
-    const r = assessGroupEligibility({ ...baseUser, reliabilityScore: 59, kycTier: 1, completedAjoCycles: 0 }, "low");
+  it("rejects users who haven't completed Basic KYC", () => {
+    const r = assessGroupEligibility({ kycTier: 1, basicKycCompleted: false }, "low");
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/60/);
+    if (!r.ok) expect(r.reason).toMatch(/Basic KYC/i);
   });
 
-  it("requires one completed cycle for medium", () => {
-    expect(assessGroupEligibility({ ...baseUser, reliabilityScore: 80, completedAjoCycles: 0 }, "medium").ok).toBe(false);
-    expect(assessGroupEligibility({ ...baseUser, reliabilityScore: 80, completedAjoCycles: 1 }, "medium").ok).toBe(true);
+  it("allows Tier-1 users into low groups when Basic KYC is completed", () => {
+    expect(assessGroupEligibility({ ...baseUser }, "low").ok).toBe(true);
   });
 
-  it("requires Tier 2 for high groups", () => {
-    expect(assessGroupEligibility({ ...baseUser, reliabilityScore: 90, completedAjoCycles: 2, kycTier: 1 }, "high").ok).toBe(false);
-    expect(assessGroupEligibility({ ...baseUser, reliabilityScore: 90, completedAjoCycles: 2, kycTier: 2 }, "high").ok).toBe(true);
+  it("allows Tier-1 users into premium groups for MVP testing", () => {
+    expect(assessGroupEligibility({ ...baseUser }, "premium").ok).toBe(true);
   });
 
-  it("requires Tier 3 and score 90 for premium", () => {
-    expect(
-      assessGroupEligibility({ ...baseUser, reliabilityScore: 89, completedAjoCycles: 0, kycTier: 3 }, "premium").ok
-    ).toBe(false);
-    expect(
-      assessGroupEligibility({ ...baseUser, reliabilityScore: 90, completedAjoCycles: 0, kycTier: 3 }, "premium").ok
-    ).toBe(true);
+  it("still respects kycTier enum (tier 1 minimum)", () => {
+    const r = assessGroupEligibility({ kycTier: 1, basicKycCompleted: true }, "high");
+    expect(r.ok).toBe(true);
   });
 });
 
