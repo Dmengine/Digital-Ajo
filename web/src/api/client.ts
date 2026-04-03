@@ -5,8 +5,21 @@ const defaultApiBaseUrl = import.meta.env.PROD
   ? "https://digital-ajo.onrender.com/api"
   : "http://localhost:3000/api";
 
+const resolveApiBaseUrl = (): string => {
+  const raw = String(import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (!raw) return defaultApiBaseUrl;
+
+  try {
+    const parsed = new URL(raw);
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    console.warn("Invalid VITE_API_BASE_URL detected. Falling back to default API base URL.", raw);
+    return defaultApiBaseUrl;
+  }
+};
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl,
+  baseURL: resolveApiBaseUrl(),
   timeout: 20_000,
 });
 
