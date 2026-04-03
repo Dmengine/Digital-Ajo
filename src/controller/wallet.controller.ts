@@ -14,7 +14,17 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
   if (!user) throw new HttpError(404, "User not found");
 
   // Real deposit via Paystack (customer pays from their bank/card).
-  const paymentURL = await initializeDeposit(user.email, user._id.toString(), amount);
+  let paymentURL: string;
+  try {
+    paymentURL = await initializeDeposit(user.email, user._id.toString(), amount);
+  } catch (err: unknown) {
+    const status = (err as any)?.response?.status;
+    if (status === 401 || status === 403) {
+      // Do not leak secrets; point to configuration/mode issues instead.
+      throw new HttpError(502, "Paystack rejected credentials. Check PAYSTACK_SECRET (test vs live).");
+    }
+    throw new HttpError(502, "Failed to initialize Paystack deposit.");
+  }
   await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
   res.json({ success: true, paymentURL });
 });
