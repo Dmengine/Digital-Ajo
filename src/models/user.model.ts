@@ -24,10 +24,12 @@ const userSchema = new mongoose.Schema(
     kycTier: { type: Number, enum: [1, 2, 3], default: 1 },
     reliabilityScore: { type: Number, default: 100, min: 0, max: 100 },
     completedAjoCycles: { type: Number, default: 0, min: 0 },
+    tokenVersion: { type: Number, default: 0, min: 0 },
     bankAccount: {
       accountNumber: { type: String },
       bankName: { type: String },
-      cardToken: { type: String },
+      // Paystack authorization codes/token-like values must NOT be stored server-side.
+      // Rely on Paystack vault / references instead of persisting sensitive card auth data.
       recipientCode: { type: String },
     },
   },

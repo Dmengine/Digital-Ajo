@@ -15,5 +15,12 @@ export const env = {
   paystackSecret: () => required("PAYSTACK_SECRET"),
   paystackWebhookSecret: () =>
     process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || required("PAYSTACK_SECRET"),
-  corsOrigin: process.env.CORS_ORIGIN?.trim() || "*",
+  corsOrigin: (() => {
+    const v = process.env.CORS_ORIGIN?.trim();
+    if (v) return v;
+    if ((process.env.NODE_ENV ?? "development") === "production") {
+      throw new Error("CORS_ORIGIN must be set in production");
+    }
+    return "*";
+  })(),
 };

@@ -9,7 +9,7 @@ exports.createGroupSchema = joi_1.default.object({
     name: joi_1.default.string().trim().min(1).max(120).required(),
     description: joi_1.default.string().trim().max(2000).allow(""),
     groupType: joi_1.default.string().valid("low", "medium", "high", "premium").required(),
-    contributionAmount: joi_1.default.number().positive().max(1e12).required(),
+    contributionAmount: joi_1.default.number().positive().max(10000000).required(),
     frequency: joi_1.default.string().valid("daily", "weekly", "monthly").required(),
     startDate: joi_1.default.date().iso().required(),
     members: joi_1.default.array().items(joi_1.default.string().trim().lowercase().min(3).max(32)).min(1).max(200).required(),

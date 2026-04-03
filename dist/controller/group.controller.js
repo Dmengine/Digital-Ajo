@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.joinGroupByInvite = exports.browseOpenGroups = exports.getGroupById = exports.createGroup = void 0;
 const crypto_1 = __importDefault(require("crypto"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const user_model_1 = require("../models/user.model");
 const groupAjo_model_1 = require("../models/groupAjo.model");
 const notification_service_1 = require("../services/notification.service");
@@ -81,9 +82,19 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     });
 }));
 exports.getGroupById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const group = yield groupAjo_model_1.GroupAjoModel.findById(req.params.id).populate("members.user", "name email username");
+    const groupId = req.params.id;
+    if (!mongoose_1.default.isValidObjectId(groupId))
+        throw new HttpError_1.HttpError(400, "Invalid group ID");
+    const group = yield groupAjo_model_1.GroupAjoModel.findById(groupId).populate("members.user", "name email username");
     if (!group)
         throw new HttpError_1.HttpError(404, "Group not found");
+    const userId = req.userId;
+    if (!userId)
+        throw new HttpError_1.HttpError(401, "Authentication required");
+    const isCreator = group.createdBy.toString() === userId;
+    const isMember = group.members.some((m) => m.user.toString() === userId);
+    if (!isCreator && !isMember)
+        throw new HttpError_1.HttpError(403, "Access denied");
     res.status(200).json({
         success: true,
         message: "Group fetched successfully",
@@ -91,11 +102,23 @@ exports.getGroupById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(
     });
 }));
 exports.browseOpenGroups = (0, asyncHandler_1.asyncHandler)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const groups = yield groupAjo_model_1.GroupAjoModel.find({ status: "open" })
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .select("name description groupType contributionAmount frequency startDate createdAt members")
-        .lean();
+    const groups = yield groupAjo_model_1.GroupAjoModel.aggregate([
+        { $match: { status: "open" } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 50 },
+        {
+            $project: {
+                name: 1,
+                description: 1,
+                groupType: 1,
+                contributionAmount: 1,
+                frequency: 1,
+                startDate: 1,
+                createdAt: 1,
+                memberCount: { $size: "$members" },
+            },
+        },
+    ]);
     res.status(200).json({ success: true, groups });
 }));
 exports.joinGroupByInvite = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.register = void 0;
+exports.logout = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const user_model_1 = require("../models/user.model");
@@ -36,12 +36,18 @@ exports.register = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void
         password: hashedPassword,
         wallets: { main: 0, locked: [] },
     });
-    const token = jsonwebtoken_1.default.sign({ id: newUser.id }, env_1.env.jwtSecret(), { expiresIn: "7d" });
+    const token = jsonwebtoken_1.default.sign({ id: newUser.id, tokenVersion: newUser.tokenVersion }, env_1.env.jwtSecret(), { expiresIn: "7d" });
+    const publicUser = {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        username: newUser.username,
+    };
     res.status(201).json({
         success: true,
         message: "User registered successfully",
         token,
-        user: newUser.toJSON(),
+        user: publicUser,
     });
 }));
 exports.login = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -54,11 +60,24 @@ exports.login = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0,
     const comparePassword = yield bcrypt_1.default.compare(password, existingUser.password);
     if (!comparePassword)
         throw new HttpError_1.HttpError(401, "Invalid credentials");
-    const token = jsonwebtoken_1.default.sign({ id: existingUser.id }, env_1.env.jwtSecret(), { expiresIn: "7d" });
+    const token = jsonwebtoken_1.default.sign({ id: existingUser.id, tokenVersion: existingUser.tokenVersion }, env_1.env.jwtSecret(), { expiresIn: "7d" });
+    const publicUser = {
+        _id: existingUser._id,
+        name: existingUser.name,
+        email: existingUser.email,
+        username: existingUser.username,
+    };
     res.status(200).json({
         success: true,
         message: "User logged in successfully",
         token,
-        user: existingUser.toJSON(),
+        user: publicUser,
     });
+}));
+exports.logout = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.userId;
+    const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } }, { new: true });
+    if (!user)
+        throw new HttpError_1.HttpError(404, "User not found");
+    res.status(200).json({ success: true, message: "Logged out successfully" });
 }));

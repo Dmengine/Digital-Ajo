@@ -55,7 +55,18 @@ export const withdraw = asyncHandler(async (req: Request, res: Response) => {
   if (!user.bankAccount?.recipientCode) throw new HttpError(400, "No bank account linked");
 
   await debitWallet(user._id.toString(), amount, "main");
-  await transferFunds(user.bankAccount.recipientCode, amount, "User Withdrawal");
+  try {
+    await transferFunds(user.bankAccount.recipientCode, amount, "User Withdrawal");
+  } catch (err: unknown) {
+    await reverseWalletDebit(user._id.toString(), amount, {
+      reason: "paystack_transfer_failed",
+      amount,
+    });
+    if (axios.isAxiosError(err)) {
+      throw new HttpError(502, "Bank transfer failed; your wallet has been refunded.");
+    }
+    throw new HttpError(502, "Bank transfer failed; your wallet has been refunded.");
+  }
   await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
 
   res.status(200).json({

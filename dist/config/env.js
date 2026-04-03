@@ -1,5 +1,5 @@
 "use strict";
-var _a, _b;
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.env = void 0;
 const required = (name) => {
@@ -17,5 +17,14 @@ exports.env = {
     /** Required when calling Paystack-backed wallet endpoints */
     paystackSecret: () => required("PAYSTACK_SECRET"),
     paystackWebhookSecret: () => { var _a; return ((_a = process.env.PAYSTACK_WEBHOOK_SECRET) === null || _a === void 0 ? void 0 : _a.trim()) || required("PAYSTACK_SECRET"); },
-    corsOrigin: ((_b = process.env.CORS_ORIGIN) === null || _b === void 0 ? void 0 : _b.trim()) || "*",
+    corsOrigin: (() => {
+        var _a, _b;
+        const v = (_a = process.env.CORS_ORIGIN) === null || _a === void 0 ? void 0 : _a.trim();
+        if (v)
+            return v;
+        if (((_b = process.env.NODE_ENV) !== null && _b !== void 0 ? _b : "development") === "production") {
+            throw new Error("CORS_ORIGIN must be set in production");
+        }
+        return "*";
+    })(),
 };

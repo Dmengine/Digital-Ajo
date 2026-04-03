@@ -15,8 +15,16 @@ const walletMutationLimiter = rateLimit({
   message: { success: false, message: "Too many requests" },
 });
 
+const withdrawLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many withdrawal requests" },
+});
+
 router.post("/webhook", webhook);
 router.post("/deposit/init", requireAuth, walletMutationLimiter, validateBody(depositInitSchema), initDeposit);
-router.post("/withdraw", requireAuth, walletMutationLimiter, validateBody(withdrawSchema), withdraw);
+router.post("/withdraw", requireAuth, withdrawLimiter, validateBody(withdrawSchema), withdraw);
 
 export default router;

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import { UserModel } from "../models/user.model";
 import { GroupAjoModel } from "../models/groupAjo.model";
 import type { GroupRiskType } from "../models/groupAjo.model";
@@ -90,9 +91,19 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getGroupById = asyncHandler(async (req: Request, res: Response) => {
-  const group = await GroupAjoModel.findById(req.params.id).populate("members.user", "name email username");
+  const groupId = req.params.id;
+  if (!mongoose.isValidObjectId(groupId)) throw new HttpError(400, "Invalid group ID");
+
+  const group = await GroupAjoModel.findById(groupId).populate("members.user", "name email username");
 
   if (!group) throw new HttpError(404, "Group not found");
+
+  const userId = req.userId;
+  if (!userId) throw new HttpError(401, "Authentication required");
+
+  const isCreator = group.createdBy.toString() === userId;
+  const isMember = group.members.some((m) => m.user.toString() === userId);
+  if (!isCreator && !isMember) throw new HttpError(403, "Access denied");
 
   res.status(200).json({
     success: true,
@@ -102,11 +113,23 @@ export const getGroupById = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const browseOpenGroups = asyncHandler(async (_req: Request, res: Response) => {
-  const groups = await GroupAjoModel.find({ status: "open" })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .select("name description groupType contributionAmount frequency startDate createdAt members")
-    .lean();
+  const groups = await GroupAjoModel.aggregate([
+    { $match: { status: "open" } },
+    { $sort: { createdAt: -1 } },
+    { $limit: 50 },
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        groupType: 1,
+        contributionAmount: 1,
+        frequency: 1,
+        startDate: 1,
+        createdAt: 1,
+        memberCount: { $size: "$members" },
+      },
+    },
+  ]);
 
   res.status(200).json({ success: true, groups });
 });
