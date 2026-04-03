@@ -7,7 +7,9 @@ const required = (name: string): string => {
 };
 
 export const env = {
-  nodeEnv: process.env.NODE_ENV ?? "development",
+  // MVP runs in "test" mode by default (NOT production) unless explicitly set.
+  // This prevents production-only fallbacks (e.g., CORS) from being triggered silently.
+  nodeEnv: process.env.NODE_ENV ?? "test",
   port: Number(process.env.PORT) || 3000,
   mongoUri: () => required("MONGO_URI"),
   jwtSecret: () => required("JWT_SECRET"),
@@ -24,7 +26,13 @@ export const env = {
     return required("PAYSTACK_SECRET");
   },
   /** Required when calling Paystack-backed wallet endpoints */
-  paystackSecret: () => required("PAYSTACK_SECRET"),
+  paystackSecret: () => {
+    const s = required("PAYSTACK_SECRET");
+    // Temporary debug: verify secret is not masked/truncated in this runtime.
+    // Do NOT print the secret value; only the length.
+    console.log("PAYSTACK_SECRET length:", s.length);
+    return s;
+  },
   paystackWebhookSecret: () =>
     process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || required("PAYSTACK_SECRET"),
   corsOrigin: (() => {
