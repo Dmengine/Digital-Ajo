@@ -140,8 +140,16 @@ export const getGroupById = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const browseOpenGroups = asyncHandler(async (_req: Request, res: Response) => {
+  const userId = (_req as any).userId as string;
+  if (!mongoose.isValidObjectId(userId)) throw new HttpError(401, "Authentication required");
+
+  const userObjectId = new mongoose.Types.ObjectId(userId);
   const groups = await GroupAjoModel.aggregate([
-    { $match: { status: "open" } },
+    {
+      $match: {
+        $or: [{ createdBy: userObjectId }, { "members.user": userObjectId }],
+      },
+    },
     { $sort: { createdAt: -1 } },
     { $limit: 50 },
     {

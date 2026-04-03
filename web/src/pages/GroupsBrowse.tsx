@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { browseGroups, joinGroupByInvite, type GroupType } from "../api/groups.api";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { useAuthStore } from "../store/authStore";
@@ -20,6 +20,7 @@ function badgeTone(type: GroupType) {
 
 export default function GroupsBrowse() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   useAuthStore(); // keep auth reactivity
   const { data, isLoading, error } = useQuery({
     queryKey: ["groups", "browse"],
@@ -32,7 +33,8 @@ export default function GroupsBrowse() {
 
   const joinMut = useMutation({
     mutationFn: (code: string) => joinGroupByInvite(code),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["groups", "browse"] });
       setJoinModalOpen(false);
       setInviteCode("");
     },
@@ -50,9 +52,9 @@ export default function GroupsBrowse() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">Browse open groups</h1>
+          <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">My groups</h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            Joining is invite-only. Use your invite code/link to join.
+            You only see groups where you are a member.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -95,7 +97,7 @@ export default function GroupsBrowse() {
 
       {groupsEmpty ? (
         <div className="rounded-2xl border border-white/10 bg-white/70 p-6 text-center shadow-sm dark:bg-slate-900/40">
-          No open groups right now. Check back later.
+          You are not in any group yet. Use an invite code to join one.
         </div>
       ) : null}
 
