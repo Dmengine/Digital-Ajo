@@ -51,12 +51,17 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
     if (!check.ok) throw new HttpError(400, `Member ${u.username}: ${check.reason}`);
   }
 
-  const roster = users.map((u, i) => ({
-    user: u._id,
-    order: i + 1,
-    hasReceived: false,
-    bufferHeld: 0,
-  }));
+  // MVP: creator is always the first member (order 1). `members` in the request are additional members.
+  const additionalUsers = users.filter((u) => u._id.toString() !== creatorId);
+  const roster = [
+    { user: creator._id, order: 1, hasReceived: false, bufferHeld: 0 },
+    ...additionalUsers.map((u, i) => ({
+      user: u._id,
+      order: i + 2,
+      hasReceived: false,
+      bufferHeld: 0,
+    })),
+  ];
 
   const inviteCode = generateInviteCode();
   const bufferRequired = bufferRequiredForGroupType(groupType);
