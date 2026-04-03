@@ -44,6 +44,7 @@ export default function GroupDetail() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatSending, setChatSending] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["group", id],
@@ -149,9 +150,32 @@ export default function GroupDetail() {
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      setInviteNotice("Invite copied. Share it with anyone you want to join.");
+      return true;
     } catch {
-      // ignore for MVP
+      setInviteNotice("Could not copy invite link on this device.");
+      return false;
     }
+  };
+
+  const shareInvite = async () => {
+    if (!shareLink) return;
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: `Join ${group?.name ?? "my group"} on ContriPay`,
+          text: "Use this invite link to join my contribution group on ContriPay.",
+          url: shareLink,
+        });
+        setInviteNotice("Invite link shared.");
+        return;
+      } catch {
+        // Fall back to clipboard below if share is canceled/unsupported.
+      }
+    }
+
+    await copy(shareLink);
   };
 
   return (
@@ -295,6 +319,35 @@ export default function GroupDetail() {
                   <div className="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Manage members</h2>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Add a user by their username (they must meet group KYC rules).</p>
+
+                    {shareLink ? (
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-white/60 p-4 dark:bg-slate-950/40">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">Invite people to this group</div>
+                        <div className="mt-1 break-all text-xs text-slate-600 dark:text-slate-300">{shareLink}</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={shareInvite}
+                            className="rounded-xl bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+                          >
+                            Share invite link
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void copy(shareLink);
+                            }}
+                            className="rounded-xl bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+                          >
+                            Copy invite link
+                          </button>
+                        </div>
+                        {inviteNotice ? (
+                          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{inviteNotice}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
                     <form
                       className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end"
                       onSubmit={(e) => {
