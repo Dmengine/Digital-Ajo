@@ -6,6 +6,14 @@ const required = (name: string): string => {
   return v.trim();
 };
 
+const paystackKey = (): string => {
+  // Some environments mask variables named PAYSTACK_SECRET to "...".
+  // Support a safer alias while remaining backward-compatible.
+  const alias = process.env.AJOPAY_PAYSTACK_KEY?.trim();
+  if (alias) return alias;
+  return required("PAYSTACK_SECRET");
+};
+
 export const env = {
   // MVP runs in "test" mode by default (NOT production) unless explicitly set.
   // This prevents production-only fallbacks (e.g., CORS) from being triggered silently.
@@ -22,19 +30,12 @@ export const env = {
     if (v) return v;
     const fallback = process.env.PAYSTACK_WEBHOOK_SECRET?.trim();
     if (fallback) return fallback;
-    // Paystack uses the same secret key for webhook verification when PAYSTACK_WEBHOOK_SECRET isn't provided.
-    return required("PAYSTACK_SECRET");
+    return paystackKey();
   },
   /** Required when calling Paystack-backed wallet endpoints */
-  paystackSecret: () => {
-    const s = required("PAYSTACK_SECRET");
-    // Temporary debug: verify secret is not masked/truncated in this runtime.
-    // Do NOT print the secret value; only the length.
-    console.log("PAYSTACK_SECRET length:", s.length);
-    return s;
-  },
+  paystackSecret: () => paystackKey(),
   paystackWebhookSecret: () =>
-    process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || required("PAYSTACK_SECRET"),
+    process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || paystackKey(),
   corsOrigin: (() => {
     const v = process.env.CORS_ORIGIN?.trim();
     if (v) return v;

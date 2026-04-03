@@ -11,19 +11,31 @@ import { asyncHandler } from "../middleware/asyncHandler";
 export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
   const { amount } = req.body as { amount: number };
   const user = await UserModel.findById((req as any).userId);
-  if (!user) throw new HttpError(404, "User not found");
+  if (!user) throw new HttpError(404, "User not found"); 
 
   // Real deposit via Paystack (customer pays from their bank/card).
   let paymentURL: string;
   try {
     paymentURL = await initializeDeposit(user.email, user._id.toString(), amount);
-  } catch (err: unknown) {
-    const status = (err as any)?.response?.status;
+  } catch (err: any) {
+    console.error("Paystack initDeposit error:", {
+      status: err?.response?.status,
+      data: err?.response?.data,
+      message: err?.message,
+    });
+    const status = err?.response?.status;
     if (status === 401 || status === 403) {
-      // Do not leak secrets; point to configuration/mode issues instead.
-      throw new HttpError(502, "Paystack rejected credentials. Check PAYSTACK_SECRET (test vs live).");
+      throw new HttpError(
+        502,
+        "Paystack rejected credentials. Check AJOPAY_PAYSTACK_KEY (test vs live) and restart the server."
+      );
     }
-    throw new HttpError(502, "Failed to initialize Paystack deposit.");
+    const paystackMsg =
+      typeof err?.response?.data?.message === "string" ? err.response.data.message : undefined;
+    throw new HttpError(
+      502,
+      paystackMsg ? `Failed to initialize Paystack deposit: ${paystackMsg}` : "Failed to initialize Paystack deposit."
+    );
   }
   await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
   res.json({ success: true, paymentURL });

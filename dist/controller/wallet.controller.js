@@ -19,7 +19,7 @@ const env_1 = require("../config/env");
 const HttpError_1 = require("../errors/HttpError");
 const asyncHandler_1 = require("../middleware/asyncHandler");
 exports.initDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d, _e;
     const { amount } = req.body;
     const user = yield user_model_1.UserModel.findById(req.userId);
     if (!user)
@@ -30,12 +30,17 @@ exports.initDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
         paymentURL = yield (0, paystack_services_1.initializeDeposit)(user.email, user._id.toString(), amount);
     }
     catch (err) {
-        const status = (_a = err === null || err === void 0 ? void 0 : err.response) === null || _a === void 0 ? void 0 : _a.status;
+        console.error("Paystack initDeposit error:", {
+            status: (_a = err === null || err === void 0 ? void 0 : err.response) === null || _a === void 0 ? void 0 : _a.status,
+            data: (_b = err === null || err === void 0 ? void 0 : err.response) === null || _b === void 0 ? void 0 : _b.data,
+            message: err === null || err === void 0 ? void 0 : err.message,
+        });
+        const status = (_c = err === null || err === void 0 ? void 0 : err.response) === null || _c === void 0 ? void 0 : _c.status;
         if (status === 401 || status === 403) {
-            // Do not leak secrets; point to configuration/mode issues instead.
-            throw new HttpError_1.HttpError(502, "Paystack rejected credentials. Check PAYSTACK_SECRET (test vs live).");
+            throw new HttpError_1.HttpError(502, "Paystack rejected credentials. Check AJOPAY_PAYSTACK_KEY (test vs live) and restart the server.");
         }
-        throw new HttpError_1.HttpError(502, "Failed to initialize Paystack deposit.");
+        const paystackMsg = typeof ((_e = (_d = err === null || err === void 0 ? void 0 : err.response) === null || _d === void 0 ? void 0 : _d.data) === null || _e === void 0 ? void 0 : _e.message) === "string" ? err.response.data.message : undefined;
+        throw new HttpError_1.HttpError(502, paystackMsg ? `Failed to initialize Paystack deposit: ${paystackMsg}` : "Failed to initialize Paystack deposit.");
     }
     yield (0, notification_service_1.notify)(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
     res.json({ success: true, paymentURL });
