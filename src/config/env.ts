@@ -20,7 +20,8 @@ export const env = {
     if (v) return v;
     const fallback = process.env.PAYSTACK_WEBHOOK_SECRET?.trim();
     if (fallback) return fallback;
-    throw new Error("WEBHOOK_SECRET must be set for webhook verification");
+    // Paystack uses the same secret key for webhook verification when PAYSTACK_WEBHOOK_SECRET isn't provided.
+    return required("PAYSTACK_SECRET");
   },
   /** Required when calling Paystack-backed wallet endpoints */
   paystackSecret: () => required("PAYSTACK_SECRET"),

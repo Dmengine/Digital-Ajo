@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
 import { UserModel } from "../models/user.model";
 import { notify } from "../services/notification.service";
-import { applyPaystackDeposit, creditWallet, debitWallet } from "../services/wallet.service";
+import { applyPaystackDeposit, debitWallet } from "../services/wallet.service";
+import { initializeDeposit } from "../services/paystack.services";
 import { verifyPaystackSignature } from "../utils/paystackWebhook";
 import { env } from "../config/env";
 import { HttpError } from "../errors/HttpError";
@@ -12,10 +13,10 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
   const user = await UserModel.findById((req as any).userId);
   if (!user) throw new HttpError(404, "User not found");
 
-  // MVP deposit: no external payment gateway.
-  await creditWallet(user._id.toString(), amount, "main");
-  await notify(user._id.toString(), `You added ₦${amount} to your Main Wallet (MVP deposit).`);
-  res.json({ success: true, depositedAmount: amount });
+  // Real deposit via Paystack (customer pays from their bank/card).
+  const paymentURL = await initializeDeposit(user.email, user._id.toString(), amount);
+  await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
+  res.json({ success: true, paymentURL });
 });
 
 export const webhook = asyncHandler(async (req: Request, res: Response) => {

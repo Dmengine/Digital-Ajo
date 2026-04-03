@@ -69,7 +69,9 @@ export default function Wallet() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-lg font-semibold text-slate-950 dark:text-white">Deposit</div>
-                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">MVP deposit (no payment gateway).</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  Paystack will charge your bank/card.
+                </div>
               </div>
               <button
                 onClick={() => setDepositOpen(false)}
@@ -99,9 +101,7 @@ export default function Wallet() {
                 onClick={async () => {
                   if (amount === "") return;
                   const res = await depositMut.mutateAsync(Number(amount));
-                  if (res.paymentURL) {
-                    window.open(res.paymentURL, "_blank", "noopener,noreferrer");
-                  }
+                  window.open(res.paymentURL, "_blank", "noopener,noreferrer");
                   setDepositOpen(false);
                   resetAmount();
                 }}
