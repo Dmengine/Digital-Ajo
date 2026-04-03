@@ -5,7 +5,6 @@ import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { initDeposit, withdraw } from "../api/wallet.api";
 
 const amountSchema = z.number().positive().max(10_000_000);
-
 export default function Wallet() {
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);

@@ -62,4 +62,3 @@ export async function uploadAvatar(imageDataUrl: string): Promise<{ success: boo
   const { data } = await api.post("/auth/avatar", { imageDataUrl });
   return data;
 }
-

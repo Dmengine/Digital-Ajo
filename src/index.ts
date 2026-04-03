@@ -1,3 +1,4 @@
+import http from "http";
 import express, { type Request, type Response, type NextFunction } from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -6,6 +7,7 @@ import { connectDB } from "./mongodb/ConnectDB";
 import { env } from "./config/env";
 import apiRoutes from "./routes/index";
 import { errorHandler } from "./middleware/errorHandler";
+import { attachChatSocket } from "./socket/chatSocket";
 
 dotenv.config();
 
@@ -57,7 +59,10 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 
 const PORT = env.port;
 
-app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+attachChatSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 

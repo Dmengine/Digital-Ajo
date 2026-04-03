@@ -13,3 +13,11 @@ export const createGroupSchema = Joi.object({
 export const joinGroupSchema = Joi.object({
   inviteCode: Joi.string().trim().min(8).max(64).required(),
 });
+
+export const postGroupMessageSchema = Joi.object({
+  body: Joi.string().trim().min(1).max(2000).required(),
+});
+
+export const addGroupMemberSchema = Joi.object({
+  username: Joi.string().trim().lowercase().min(3).max(32).required(),
+});
