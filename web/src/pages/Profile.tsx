@@ -143,7 +143,7 @@ export default function Profile() {
           <div className="rounded-2xl border border-white/10 bg-white/60 p-4 dark:bg-slate-950/30">
             <div className="text-sm font-semibold text-slate-900 dark:text-white">KYC & Trust</div>
             <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              MVP: complete Tier 1 KYC before using Ajo groups.
+              MVP: complete Tier 1 KYC before using ContriPay groups.
             </div>
 
             {!kycVerified ? (

@@ -6,7 +6,7 @@ export default function Landing() {
 
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 sm:p-10">
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 sm:p-10">
         <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/20 blur-3xl" />
 
@@ -20,7 +20,7 @@ export default function Landing() {
               Save Together, Win Together
             </h1>
             <p className="text-slate-700 dark:text-slate-300">
-              Digital-Ajo is a modern, wallet-first Ajo/Susu platform with tiered verification—built for trust.
+              ContriPay is a modern, wallet-first Ajo/Susu platform with tiered verification—built for trust.
             </p>
 
             <div className="flex flex-wrap gap-3">

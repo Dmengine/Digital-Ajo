@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,14 +32,16 @@ function parseMembers(membersCsv?: string): string[] {
 
 export default function CreateGroup() {
   const navigate = useNavigate();
-  useAuthStore(); // keep auth reactivity
+  const { token, user } = useAuthStore();
 
-  const { data: meData } = useQuery({
+  const { data: meData, isFetching } = useQuery({
     queryKey: ["auth", "me"],
     queryFn: fetchMe,
+    enabled: !!token,
   });
 
-  const basicKycCompleted = meData?.user?.basicKycCompleted ?? false;
+  const basicKycCompleted = meData?.user?.basicKycCompleted ?? user?.basicKycCompleted ?? false;
+  const isCheckingKyc = isFetching && !meData;
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -82,19 +84,21 @@ export default function CreateGroup() {
     },
   });
 
-  const disabled = !basicKycCompleted || mut.isPending;
+  const disabled = isCheckingKyc || !basicKycCompleted || mut.isPending;
   const groupTypeOptions: Array<Values["groupType"]> = ["low", "medium"];
-
-  const canSubmit = useMemo(() => basicKycCompleted, [basicKycCompleted]);
 
   return (
     <div className="space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
+      <div className="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
         <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">Create Group</h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           MVP: invite-only joining. You can create and share your invite code.
         </p>
-        {!basicKycCompleted ? (
+        {isCheckingKyc ? (
+          <div className="mt-3 rounded-xl bg-slate-500/10 p-3 text-sm text-slate-600 dark:text-slate-300">
+            Checking your KYC status...
+          </div>
+        ) : !basicKycCompleted ? (
           <div className="mt-3 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-300">
             Complete Tier 1 KYC first to create groups.
           </div>
@@ -208,7 +212,7 @@ export default function CreateGroup() {
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           <button
             type="submit"
-            disabled={!canSubmit || disabled}
+            disabled={disabled}
             className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
           >
             {mut.isPending ? "Creating..." : "Create group"}

@@ -43,7 +43,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <Link to="/" className="font-bold tracking-tight text-white">
             <span className="rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 px-3 py-1 text-sm text-white shadow-sm">
-              Digital-Ajo
+              ContriPay
             </span>
           </Link>
         </div>
