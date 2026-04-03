@@ -1,8 +1,12 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { initDeposit, withdraw } from "../api/wallet.api";
+import { me as fetchMe } from "../api/auth.api";
+import { useAuthStore } from "../store/authStore";
+import { formatNaira } from "../utils/currency";
 
 const amountSchema = z.number().positive().max(10_000_000);
 export default function Wallet() {
@@ -10,6 +14,17 @@ export default function Wallet() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const [amount, setAmount] = useState<number | "">("");
+  const token = useAuthStore((state) => state.token);
+
+  const { data: meData, isFetching, refetch } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: fetchMe,
+    enabled: !!token,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15000,
+  });
+
+  const walletBalance = meData?.user?.wallets?.main ?? 0;
 
   const depositMut = useMutation({
     mutationFn: (amt: number) => initDeposit(amt),
@@ -29,13 +44,15 @@ export default function Wallet() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
+      <div className="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm text-slate-600 dark:text-slate-300">Main Wallet</div>
-            <div className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">₦0</div>
+            <div className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">
+              ₦{formatNaira(walletBalance)}
+            </div>
             <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              MVP UI—wallet totals appear once a profile endpoint is added.
+              {isFetching ? "Refreshing wallet balance..." : "Balance updates after successful deposit webhooks."}
             </div>
           </div>
           <div className="flex gap-2">
@@ -103,6 +120,7 @@ export default function Wallet() {
                   window.open(res.paymentURL, "_blank", "noopener,noreferrer");
                   setDepositOpen(false);
                   resetAmount();
+                  void refetch();
                 }}
                 className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
               >
@@ -152,6 +170,7 @@ export default function Wallet() {
                   await withdrawMut.mutateAsync(Number(amount));
                   setWithdrawOpen(false);
                   resetAmount();
+                  void refetch();
                 }}
                 className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
               >

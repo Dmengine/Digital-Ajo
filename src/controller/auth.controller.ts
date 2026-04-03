@@ -93,7 +93,9 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
-  const user = await UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage");
+  const user = await UserModel.findById(userId).select(
+    "name email username kycTier basicKycCompleted profileImage wallets.main"
+  );
   if (!user) throw new HttpError(404, "User not found");
 
   res.status(200).json({
@@ -106,6 +108,9 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
       kycTier: user.kycTier,
       basicKycCompleted: user.basicKycCompleted,
       profileImage: user.profileImage ?? null,
+      wallets: {
+        main: user.wallets?.main ?? 0,
+      },
     },
   });
 });

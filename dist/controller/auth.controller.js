@@ -82,9 +82,9 @@ exports.logout = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0
     res.status(200).json({ success: true, message: "Logged out successfully" });
 }));
 exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c;
     const userId = req.userId;
-    const user = yield user_model_1.UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage");
+    const user = yield user_model_1.UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage wallets.main");
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
     res.status(200).json({
@@ -97,6 +97,9 @@ exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, vo
             kycTier: user.kycTier,
             basicKycCompleted: user.basicKycCompleted,
             profileImage: (_a = user.profileImage) !== null && _a !== void 0 ? _a : null,
+            wallets: {
+                main: (_c = (_b = user.wallets) === null || _b === void 0 ? void 0 : _b.main) !== null && _c !== void 0 ? _c : 0,
+            },
         },
     });
 }));

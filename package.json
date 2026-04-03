@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "start": "ts-node-dev src/index.ts",
-    "build": "tsc"
+    "dev": "ts-node-dev src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js", 
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",

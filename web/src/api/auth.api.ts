@@ -41,7 +41,12 @@ export async function logout(): Promise<{ success: boolean; message: string }> {
 
 export async function me(): Promise<{
   success: boolean;
-  user: PublicUser & { basicKycCompleted?: boolean; kycTier?: number; profileImage?: string | null };
+  user: PublicUser & {
+    basicKycCompleted?: boolean;
+    kycTier?: number;
+    profileImage?: string | null;
+    wallets?: { main?: number };
+  };
 }> {
   const { data } = await api.get("/auth/me");
   return data;

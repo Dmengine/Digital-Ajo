@@ -9,6 +9,9 @@ export type PublicUser = {
   kycTier?: number;
   basicKycCompleted?: boolean;
   profileImage?: string | null;
+  wallets?: {
+    main?: number;
+  };
 };
 
 type AuthState = {
