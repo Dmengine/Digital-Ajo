@@ -23,7 +23,9 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       res.status(401).json({ success: false, message: "Invalid or expired token" });
       return;
     }
-    req.userId = id;
+    // ts-node-dev in this repo may not automatically load our global Request augmentation.
+    // Cast keeps runtime behavior unchanged while unblocking compilation.
+    (req as any).userId = id;
     next();
   } catch {
     res.status(401).json({ success: false, message: "Invalid or expired token" });

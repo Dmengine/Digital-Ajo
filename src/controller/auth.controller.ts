@@ -85,7 +85,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.userId!;
+  const userId = (req as any).userId as string;
   const user = await UserModel.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } }, { new: true });
   if (!user) throw new HttpError(404, "User not found");
   res.status(200).json({ success: true, message: "Logged out successfully" });

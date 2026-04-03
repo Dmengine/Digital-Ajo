@@ -11,7 +11,7 @@ import { asyncHandler } from "../middleware/asyncHandler";
 
 export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
   const { amount } = req.body as { amount: number };
-  const user = await UserModel.findById(req.userId);
+  const user = await UserModel.findById((req as any).userId);
   if (!user) throw new HttpError(404, "User not found");
 
   const url = await initializeDeposit(user.email, user._id.toString(), amount);
@@ -22,7 +22,7 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
 export const webhook = asyncHandler(async (req: Request, res: Response) => {
   const signature = req.headers["x-paystack-signature"];
   const sig = Array.isArray(signature) ? signature[0] : signature;
-  const raw = req.rawBody;
+  const raw = (req as any).rawBody as Buffer | undefined;
   if (!verifyPaystackSignature(raw, sig, env.paystackWebhookSecret())) {
     throw new HttpError(400, "Invalid webhook signature");
   }
@@ -50,7 +50,7 @@ export const webhook = asyncHandler(async (req: Request, res: Response) => {
 
 export const withdraw = asyncHandler(async (req: Request, res: Response) => {
   const { amount } = req.body as { amount: number };
-  const user = await UserModel.findById(req.userId);
+  const user = await UserModel.findById((req as any).userId);
   if (!user) throw new HttpError(404, "User not found");
   if (!user.bankAccount?.recipientCode) throw new HttpError(400, "No bank account linked");
 

@@ -14,7 +14,7 @@ function generateInviteCode(): string {
 }
 
 export const createGroup = asyncHandler(async (req: Request, res: Response) => {
-  const creatorId = req.userId!;
+  const creatorId = (req as any).userId as string;
   const { name, description, groupType, contributionAmount, frequency, startDate, members } = req.body as {
     name: string;
     description?: string;
@@ -98,7 +98,7 @@ export const getGroupById = asyncHandler(async (req: Request, res: Response) => 
 
   if (!group) throw new HttpError(404, "Group not found");
 
-  const userId = req.userId;
+  const userId = (req as any).userId as string | undefined;
   if (!userId) throw new HttpError(401, "Authentication required");
 
   const isCreator = group.createdBy.toString() === userId;
@@ -135,7 +135,7 @@ export const browseOpenGroups = asyncHandler(async (_req: Request, res: Response
 });
 
 export const joinGroupByInvite = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.userId!;
+  const userId = (req as any).userId as string;
   const { inviteCode } = req.body as { inviteCode: string };
 
   const group = await GroupAjoModel.findOne({ inviteCode, status: "open" });
