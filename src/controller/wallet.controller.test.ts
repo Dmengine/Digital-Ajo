@@ -12,7 +12,7 @@ vi.mock("../utils/paystackWebhook", () => ({
 
 vi.mock("../config/env", () => ({
   env: {
-    paystackWebhookSecret: vi.fn(() => "test_secret"),
+    webhookSecret: vi.fn(() => "test_secret"),
   },
 }));
 

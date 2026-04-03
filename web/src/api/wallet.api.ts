@@ -1,6 +1,11 @@
 import { api } from "./client";
 
-export async function initDeposit(amount: number): Promise<{ success: boolean; paymentURL: string }> {
+export async function initDeposit(amount: number): Promise<{
+  success: boolean;
+  paymentURL?: string;
+  depositedAmount?: number;
+  message?: string;
+}> {
   const { data } = await api.post("/wallet/deposit/init", { amount });
   return data;
 }

@@ -202,21 +202,40 @@ export default function Profile() {
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/60 p-4 shadow-sm dark:bg-slate-950/30">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">Upload Profile Image</div>
-          <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">MVP: stored as a data URL in MongoDB.</div>
+          <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            MVP: stored as a data URL in MongoDB. Keep it small.
+          </div>
 
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {avatarMut.isPending ? "Updating..." : "Choose an image (PNG/JPG/WebP)."}
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              className="w-full text-sm text-slate-700 dark:text-slate-200 sm:w-auto"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onPickAvatar(file);
-              }}
-            />
+
+            <div className="flex items-center gap-3">
+              <input
+                id="avatarUpload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onPickAvatar(file);
+                }}
+              />
+
+              <label
+                htmlFor="avatarUpload"
+                className="cursor-pointer select-none rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-95 active:opacity-90"
+              >
+                {avatarMut.isPending ? "Uploading..." : "Upload image"}
+              </label>
+
+              {avatarPreview ? (
+                <div className="relative h-12 w-12 overflow-hidden rounded-full border border-white/10 shadow-sm">
+                  <img src={avatarPreview} alt="preview" className="h-full w-full object-cover" />
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {avatarMut.isError ? (

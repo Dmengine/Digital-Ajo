@@ -119,12 +119,17 @@ export default function Dashboard() {
             <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">Start contributing in seconds.</div>
           </div>
           <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-            <Plus size={18} />
+            <Link to="/groups/create" className="inline-flex">
+              <Plus size={18} />
+            </Link>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/groups/browse" className="rounded-xl border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white/70 dark:bg-slate-950/30 dark:text-white dark:hover:bg-slate-950/45">
             Browse groups
+          </Link>
+          <Link to="/groups/create" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
+            Create group
           </Link>
           <Link to="/wallet" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">
             Deposit / Withdraw
