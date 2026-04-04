@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.withdraw = exports.webhook = exports.initDeposit = void 0;
+exports.withdraw = exports.webhook = exports.verifyDeposit = exports.initDeposit = void 0;
 const user_model_1 = require("../models/user.model");
 const notification_service_1 = require("../services/notification.service");
 const wallet_service_1 = require("../services/wallet.service");
@@ -26,8 +26,11 @@ exports.initDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
         throw new HttpError_1.HttpError(404, "User not found");
     // Real deposit via Paystack (customer pays from their bank/card).
     let paymentURL;
+    let reference;
     try {
-        paymentURL = yield (0, paystack_services_1.initializeDeposit)(user.email, user._id.toString(), amount);
+        const initialized = yield (0, paystack_services_1.initializeDeposit)(user.email, user._id.toString(), amount);
+        paymentURL = initialized.authorizationUrl;
+        reference = initialized.reference;
     }
     catch (err) {
         console.error("Paystack initDeposit error:", {
@@ -43,10 +46,41 @@ exports.initDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
         throw new HttpError_1.HttpError(502, paystackMsg ? `Failed to initialize Paystack deposit: ${paystackMsg}` : "Failed to initialize Paystack deposit.");
     }
     yield (0, notification_service_1.notify)(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
-    res.json({ success: true, paymentURL });
+    res.json({ success: true, paymentURL, reference });
+}));
+exports.verifyDeposit = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const userId = req.userId;
+    const { reference } = req.body;
+    const ref = reference === null || reference === void 0 ? void 0 : reference.trim();
+    if (!ref)
+        throw new HttpError_1.HttpError(400, "Deposit reference is required");
+    let verified;
+    try {
+        verified = yield (0, paystack_services_1.verifyDepositByReference)(ref);
+    }
+    catch (_d) {
+        throw new HttpError_1.HttpError(502, "Could not verify deposit with Paystack");
+    }
+    const status = typeof (verified === null || verified === void 0 ? void 0 : verified.status) === "string" ? verified.status : "";
+    if (status !== "success") {
+        res.status(200).json({ success: true, settled: false, message: "Payment not completed yet" });
+        return;
+    }
+    const metaUserId = (_b = (_a = verified === null || verified === void 0 ? void 0 : verified.metadata) === null || _a === void 0 ? void 0 : _a.userId) !== null && _b !== void 0 ? _b : (_c = verified === null || verified === void 0 ? void 0 : verified.metadata) === null || _c === void 0 ? void 0 : _c.userID;
+    if (metaUserId && metaUserId !== userId) {
+        throw new HttpError_1.HttpError(403, "Reference does not belong to this user");
+    }
+    const amountKobo = verified === null || verified === void 0 ? void 0 : verified.amount;
+    if (typeof amountKobo !== "number" || !Number.isFinite(amountKobo) || amountKobo <= 0) {
+        throw new HttpError_1.HttpError(400, "Invalid verified amount");
+    }
+    const amount = amountKobo / 100;
+    yield (0, wallet_service_1.applyPaystackDeposit)(userId, amount, ref);
+    res.status(200).json({ success: true, settled: true, message: "Deposit confirmed and wallet credited" });
 }));
 exports.webhook = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     // MVP: generic signed webhook verification. Accept both headers for backward compatibility.
     const signature = ((_a = req.headers["x-webhook-signature"]) !== null && _a !== void 0 ? _a : req.headers["x-paystack-signature"]);
     const sig = Array.isArray(signature) ? signature[0] : signature;
@@ -82,6 +116,14 @@ exports.webhook = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 
             return;
         }
         yield (0, wallet_service_1.applyPaystackDeposit)(userId, amount, reference);
+        const authCode = (_o = (_m = event === null || event === void 0 ? void 0 : event.data) === null || _m === void 0 ? void 0 : _m.authorization) === null || _o === void 0 ? void 0 : _o.authorization_code;
+        if (typeof authCode === "string" && authCode.trim()) {
+            yield user_model_1.UserModel.updateOne({ _id: userId }, {
+                $set: {
+                    "bankAccount.autoDebitAuthorizationCode": authCode.trim(),
+                },
+            });
+        }
     }
     res.sendStatus(200);
 }));

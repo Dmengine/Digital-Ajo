@@ -84,7 +84,7 @@ exports.logout = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0
 exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const userId = req.userId;
-    const user = yield user_model_1.UserModel.findById(userId).select("name email username kycTier basicKycCompleted profileImage wallets.main");
+    const user = yield user_model_1.UserModel.findById(userId).select("name email username phone kycTier basicKycCompleted profileImage wallets.main reliabilityScore isRestricted isFlagged");
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
     res.status(200).json({
@@ -94,9 +94,13 @@ exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, vo
             name: user.name,
             email: user.email,
             username: user.username,
+            phone: user.phone,
             kycTier: user.kycTier,
             basicKycCompleted: user.basicKycCompleted,
             profileImage: (_a = user.profileImage) !== null && _a !== void 0 ? _a : null,
+            reliabilityScore: user.reliabilityScore,
+            isRestricted: user.isRestricted,
+            isFlagged: user.isFlagged,
             wallets: {
                 main: (_c = (_b = user.wallets) === null || _b === void 0 ? void 0 : _b.main) !== null && _c !== void 0 ? _c : 0,
             },
@@ -105,7 +109,7 @@ exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, vo
 }));
 exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
-    const { accountNumber, bankName } = req.body;
+    const { bvnOrNin, accountNumber, bankName, accountName } = req.body;
     const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, {
         kycTier: 1,
         basicKycCompleted: true,
@@ -117,6 +121,15 @@ exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaite
         user.bankAccount = {};
     user.bankAccount.accountNumber = accountNumber;
     user.bankAccount.bankName = bankName;
+    user.bankAccount.accountName = accountName;
+    user.kycProfile = {
+        verified: true,
+        identityType: bvnOrNin.trim().length === 11 ? "bvn" : "nin",
+        identityLast4: bvnOrNin.trim().slice(-4),
+        legalName: user.name,
+        verifiedBankAccountName: accountName,
+        verifiedAt: new Date(),
+    };
     yield user.save();
     res.status(200).json({ success: true, message: "Tier 1 KYC submitted successfully" });
 }));

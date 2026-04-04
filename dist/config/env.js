@@ -41,7 +41,7 @@ exports.env = {
     // MVP runs in "test" mode by default (NOT production) unless explicitly set.
     // This prevents production-only fallbacks (e.g., CORS) from being triggered silently.
     nodeEnv: (_a = process.env.NODE_ENV) !== null && _a !== void 0 ? _a : "test",
-    port: Number(process.env.PORT) || 3000,
+    port: Number(process.env.PORT) || 3001,
     mongoUri: () => required("MONGO_URI"),
     jwtSecret: () => required("JWT_SECRET"),
     /**
@@ -61,5 +61,14 @@ exports.env = {
     /** Required when calling Paystack-backed wallet endpoints */
     paystackSecret: () => paystackKey(),
     paystackWebhookSecret: () => { var _a; return ((_a = process.env.PAYSTACK_WEBHOOK_SECRET) === null || _a === void 0 ? void 0 : _a.trim()) || paystackKey(); },
+    twilioAccountSid: () => required("TWILIO_ACCOUNT_SID"),
+    twilioAuthToken: () => required("TWILIO_AUTH_TOKEN"),
+    twilioFromNumber: () => required("TWILIO_FROM_NUMBER"),
+    twilioConfigured: () => {
+        var _a, _b, _c;
+        return Boolean(((_a = process.env.TWILIO_ACCOUNT_SID) === null || _a === void 0 ? void 0 : _a.trim()) &&
+            ((_b = process.env.TWILIO_AUTH_TOKEN) === null || _b === void 0 ? void 0 : _b.trim()) &&
+            ((_c = process.env.TWILIO_FROM_NUMBER) === null || _c === void 0 ? void 0 : _c.trim()));
+    },
     corsOrigin: resolveCorsOrigin(),
 };

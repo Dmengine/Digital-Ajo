@@ -29,6 +29,7 @@ function generateInviteCode() {
     return crypto_1.default.randomBytes(16).toString("hex");
 }
 exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const creatorId = req.userId;
     const { name, description, groupType, contributionAmount, frequency, startDate, members } = req.body;
     const creator = yield user_model_1.UserModel.findById(creatorId);
@@ -37,6 +38,8 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
     const creatorCheck = (0, eligibility_service_1.assessGroupEligibility)({
         kycTier: creator.kycTier,
         basicKycCompleted: creator.basicKycCompleted,
+        reliabilityScore: creator.reliabilityScore,
+        isRestricted: creator.isRestricted,
     }, groupType);
     if (!creatorCheck.ok)
         throw new HttpError_1.HttpError(403, creatorCheck.reason);
@@ -47,6 +50,8 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
         const check = (0, eligibility_service_1.assessGroupEligibility)({
             kycTier: u.kycTier,
             basicKycCompleted: u.basicKycCompleted,
+            reliabilityScore: u.reliabilityScore,
+            isRestricted: u.isRestricted,
         }, groupType);
         if (!check.ok)
             throw new HttpError_1.HttpError(400, `Member ${u.username}: ${check.reason}`);
@@ -62,6 +67,14 @@ exports.createGroup = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(v
             bufferHeld: 0,
         })),
     ];
+    for (const member of roster) {
+        const target = member.user.toString() === creator._id.toString() ? creator : additionalUsers.find((u) => u._id.equals(member.user));
+        const score = (_a = target === null || target === void 0 ? void 0 : target.reliabilityScore) !== null && _a !== void 0 ? _a : 100;
+        const orderCheck = (0, eligibility_service_1.canTakeEarlyPayoutPosition)(score, member.order, roster.length);
+        if (!orderCheck.ok) {
+            throw new HttpError_1.HttpError(400, `Member at position ${member.order}: ${orderCheck.reason}`);
+        }
+    }
     const inviteCode = generateInviteCode();
     const bufferRequired = (0, eligibility_service_1.bufferRequiredForGroupType)(groupType);
     const newGroup = yield groupAjo_model_1.GroupAjoModel.create({
@@ -128,8 +141,29 @@ exports.getGroupById = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(
     });
 }));
 exports.browseOpenGroups = (0, asyncHandler_1.asyncHandler)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = _req.userId;
+    if (!mongoose_1.default.isValidObjectId(userId))
+        throw new HttpError_1.HttpError(401, "Authentication required");
+    const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
     const groups = yield groupAjo_model_1.GroupAjoModel.aggregate([
-        { $match: { status: "open" } },
+        {
+            $match: {
+                $or: [{ createdBy: userObjectId }, { "members.user": userObjectId }],
+            },
+        },
+        {
+            $lookup: {
+                from: "groupmessages",
+                let: { gid: "$_id" },
+                pipeline: [
+                    { $match: { $expr: { $eq: ["$groupAjo", "$$gid"] } } },
+                    { $sort: { createdAt: -1 } },
+                    { $limit: 1 },
+                    { $project: { _id: 0, createdAt: 1 } },
+                ],
+                as: "lastMessage",
+            },
+        },
         { $sort: { createdAt: -1 } },
         { $limit: 50 },
         {
@@ -142,6 +176,7 @@ exports.browseOpenGroups = (0, asyncHandler_1.asyncHandler)((_req, res) => __awa
                 startDate: 1,
                 createdAt: 1,
                 memberCount: { $size: "$members" },
+                lastMessageAt: { $ifNull: [{ $arrayElemAt: ["$lastMessage.createdAt", 0] }, null] },
             },
         },
     ]);
@@ -162,6 +197,8 @@ exports.joinGroupByInvite = (0, asyncHandler_1.asyncHandler)((req, res) => __awa
     const check = (0, eligibility_service_1.assessGroupEligibility)({
         kycTier: user.kycTier,
         basicKycCompleted: user.basicKycCompleted,
+        reliabilityScore: user.reliabilityScore,
+        isRestricted: user.isRestricted,
     }, group.groupType);
     if (!check.ok)
         throw new HttpError_1.HttpError(403, check.reason);
@@ -192,6 +229,8 @@ exports.getGroupDashboard = (0, asyncHandler_1.asyncHandler)((req, res) => __awa
                 _id: "$user",
                 completedCount: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
                 failedCount: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+                unpaidCount: { $sum: { $cond: [{ $eq: ["$status", "unpaid"] }, 1, 0] } },
+                defaultedCount: { $sum: { $cond: [{ $eq: ["$status", "defaulted"] }, 1, 0] } },
                 pendingCount: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
                 totalPaid: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, "$amount", 0] } },
             },
@@ -204,7 +243,7 @@ exports.getGroupDashboard = (0, asyncHandler_1.asyncHandler)((req, res) => __awa
         .lean();
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
     const members = group.members.map((m) => {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         const uid = m.user.toString();
         const u = userMap.get(uid);
         const st = statsByUser.get(uid);
@@ -217,11 +256,13 @@ exports.getGroupDashboard = (0, asyncHandler_1.asyncHandler)((req, res) => __awa
             bufferHeld: m.bufferHeld,
             completedContributions: (_a = st === null || st === void 0 ? void 0 : st.completedCount) !== null && _a !== void 0 ? _a : 0,
             failedContributions: (_b = st === null || st === void 0 ? void 0 : st.failedCount) !== null && _b !== void 0 ? _b : 0,
-            pendingContributions: (_c = st === null || st === void 0 ? void 0 : st.pendingCount) !== null && _c !== void 0 ? _c : 0,
-            totalPaid: (_d = st === null || st === void 0 ? void 0 : st.totalPaid) !== null && _d !== void 0 ? _d : 0,
+            unpaidContributions: (_c = st === null || st === void 0 ? void 0 : st.unpaidCount) !== null && _c !== void 0 ? _c : 0,
+            defaultedContributions: (_d = st === null || st === void 0 ? void 0 : st.defaultedCount) !== null && _d !== void 0 ? _d : 0,
+            pendingContributions: (_e = st === null || st === void 0 ? void 0 : st.pendingCount) !== null && _e !== void 0 ? _e : 0,
+            totalPaid: (_f = st === null || st === void 0 ? void 0 : st.totalPaid) !== null && _f !== void 0 ? _f : 0,
         };
     });
-    const defaulters = members.filter((r) => r.failedContributions > 0);
+    const defaulters = members.filter((r) => r.failedContributions > 0 || r.unpaidContributions > 0 || r.defaultedContributions > 0);
     res.status(200).json({
         success: true,
         isAdmin,
@@ -283,6 +324,8 @@ exports.addGroupMember = (0, asyncHandler_1.asyncHandler)((req, res) => __awaite
     const check = (0, eligibility_service_1.assessGroupEligibility)({
         kycTier: newUser.kycTier,
         basicKycCompleted: newUser.basicKycCompleted,
+        reliabilityScore: newUser.reliabilityScore,
+        isRestricted: newUser.isRestricted,
     }, group.groupType);
     if (!check.ok)
         throw new HttpError_1.HttpError(400, check.reason);

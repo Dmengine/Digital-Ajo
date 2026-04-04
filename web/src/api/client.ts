@@ -3,7 +3,7 @@ import { useAuthStore } from "../store/authStore";
 
 const defaultApiBaseUrl = import.meta.env.PROD
   ? "https://digital-ajo.onrender.com/api"
-  : "http://localhost:3000/api";
+  : "http://localhost:3001/api";
 
 const resolveApiBaseUrl = (): string => {
   const raw = String(import.meta.env.VITE_API_BASE_URL ?? "").trim();

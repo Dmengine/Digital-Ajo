@@ -220,6 +220,11 @@ export default function GroupDetail() {
                   <div className="rounded-xl bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-950/40 dark:text-slate-200">
                     Status: {group.status}
                   </div>
+                  {dashQ.data?.group?.roundStatus ? (
+                    <div className="rounded-xl bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-950/40 dark:text-slate-200">
+                      Round: {dashQ.data.group.roundStatus}
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="rounded-2xl bg-gradient-to-br from-indigo-500/15 to-emerald-500/10 p-4">
@@ -259,6 +264,14 @@ export default function GroupDetail() {
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                     Round {dashQ.data.group.currentRound} · Totals from recorded contributions in this group.
                   </p>
+                  {dashQ.data.group.roundStatus === "paused" ? (
+                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                      This round is paused because at least one contribution is unresolved.
+                      {dashQ.data.group.roundGraceEndsAt
+                        ? ` Grace period ends ${new Date(dashQ.data.group.roundGraceEndsAt).toLocaleString()}.`
+                        : ""}
+                    </div>
+                  ) : null}
                   <div className="mt-4 overflow-x-auto">
                     <table className="w-full min-w-[640px] text-left text-sm">
                       <thead>
@@ -269,6 +282,8 @@ export default function GroupDetail() {
                           <th className="py-2 pr-3 font-medium">Completed</th>
                           <th className="py-2 pr-3 font-medium">Pending</th>
                           <th className="py-2 pr-3 font-medium">Failed</th>
+                          <th className="py-2 pr-3 font-medium">Unpaid</th>
+                          <th className="py-2 pr-3 font-medium">Defaulted</th>
                           <th className="py-2 font-medium">Payout</th>
                         </tr>
                       </thead>
@@ -284,6 +299,8 @@ export default function GroupDetail() {
                             <td className="py-3 pr-3">{m.completedContributions}</td>
                             <td className="py-3 pr-3">{m.pendingContributions}</td>
                             <td className="py-3 pr-3">{m.failedContributions}</td>
+                            <td className="py-3 pr-3">{m.unpaidContributions}</td>
+                            <td className="py-3 pr-3">{m.defaultedContributions}</td>
                             <td className="py-3">
                               {m.hasReceived ? (
                                 <span className="rounded-lg bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
@@ -305,7 +322,7 @@ export default function GroupDetail() {
                 <div className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6 dark:bg-amber-500/10">
                   <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Defaulters</h2>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                    Members with at least one failed contribution record for this group.
+                    Members with failed, unpaid, or defaulted contribution records in this group.
                   </p>
                   {dashQ.data.defaulters.length === 0 ? (
                     <div className="mt-4 rounded-2xl border border-white/10 bg-white/60 p-4 text-sm text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
@@ -321,7 +338,7 @@ export default function GroupDetail() {
                           <div>
                             <div className="font-semibold text-slate-900 dark:text-white">{d.name ?? "Member"}</div>
                             <div className="text-xs text-slate-500">
-                              @{d.username ?? "—"} · failed payments: {d.failedContributions}
+                              @{d.username ?? "—"} · failed: {d.failedContributions} · unpaid: {d.unpaidContributions} · defaulted: {d.defaultedContributions}
                             </div>
                           </div>
                         </li>

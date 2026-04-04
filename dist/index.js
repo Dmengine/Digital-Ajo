@@ -13,6 +13,7 @@ const env_1 = require("./config/env");
 const index_1 = __importDefault(require("./routes/index"));
 const errorHandler_1 = require("./middleware/errorHandler");
 const chatSocket_1 = require("./socket/chatSocket");
+const contributionCycle_job_1 = require("./jobs/contributionCycle.job");
 dotenv_1.default.config();
 try {
     env_1.env.mongoUri();
@@ -62,3 +63,4 @@ httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
 void (0, ConnectDB_1.connectDB)();
+(0, contributionCycle_job_1.startContributionCycleJob)();

@@ -1,9 +1,9 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { initDeposit, webhook, withdraw } from "../controller/wallet.controller";
+import { initDeposit, verifyDeposit, webhook, withdraw } from "../controller/wallet.controller";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
-import { depositInitSchema, withdrawSchema } from "../validators/wallet.validators";
+import { depositInitSchema, depositVerifySchema, withdrawSchema } from "../validators/wallet.validators";
 
 const router = Router();
 
@@ -25,6 +25,13 @@ const withdrawLimiter = rateLimit({
 
 router.post("/webhook", webhook);
 router.post("/deposit/init", requireAuth, walletMutationLimiter, validateBody(depositInitSchema), initDeposit);
-router.post("/withdraw", requireAuth, withdrawLimiter, validateBody(withdrawSchema), withdraw);
+router.post("/deposit/verify", requireAuth, walletMutationLimiter, validateBody(depositVerifySchema), verifyDeposit);
+router.post(
+  "/withdraw",
+  requireAuth,
+  withdrawLimiter,
+  validateBody(withdrawSchema),
+  withdraw
+);
 
 export default router;

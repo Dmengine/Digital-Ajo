@@ -4,7 +4,11 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
-import { me as fetchMe, submitTier1Kyc, uploadAvatar } from "../api/auth.api";
+import {
+  me as fetchMe,
+  submitTier1Kyc,
+  uploadAvatar,
+} from "../api/auth.api";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { Link } from "react-router-dom";
 
@@ -42,6 +46,7 @@ export default function Profile() {
     residentialAddress: z.string().trim().min(5).max(500),
     accountNumber: z.string().trim().min(4).max(20),
     bankName: z.string().trim().min(2).max(120),
+    accountName: z.string().trim().min(2).max(120),
   });
 
   type KycValues = z.infer<typeof kycSchema>;
@@ -54,6 +59,7 @@ export default function Profile() {
       residentialAddress: "",
       accountNumber: "",
       bankName: "",
+      accountName: "",
     },
     mode: "onChange",
   });
@@ -143,7 +149,7 @@ export default function Profile() {
           <div className="rounded-2xl border border-white/10 bg-white/60 p-4 dark:bg-slate-950/30">
             <div className="text-sm font-semibold text-slate-900 dark:text-white">KYC & Trust</div>
             <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              MVP: complete Tier 1 KYC before using ContriPay groups.
+              Tier 1 KYC is still required for group participation and risk controls.
             </div>
 
             {!kycVerified ? (
@@ -158,6 +164,7 @@ export default function Profile() {
                     ["residentialAddress", "Residential Address", "text"],
                     ["accountNumber", "Bank Account Number", "text"],
                     ["bankName", "Bank Name", "text"],
+                    ["accountName", "Bank Account Name", "text"],
                   ] as const
                 ).map(([key, label, type]) => (
                   <div key={key} className="space-y-1">

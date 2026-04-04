@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export type GroupRiskType = "low" | "medium" | "high" | "premium";
 export type GroupStatus = "open" | "active" | "completed" | "cancelled";
+export type GroupRoundStatus = "active" | "paused" | "completed";
 
 const memberSchema = new mongoose.Schema(
   {
@@ -48,9 +49,21 @@ const groupAjoSchema = new mongoose.Schema(
     members: { type: [memberSchema], default: [] },
     joinRequests: { type: [joinRequestSchema], default: [] },
     currentRound: { type: Number, default: 1, min: 1 },
+    roundStatus: {
+      type: String,
+      enum: ["active", "paused", "completed"] satisfies GroupRoundStatus[],
+      default: "active",
+    },
+    roundDueAt: { type: Date },
+    roundGraceEndsAt: { type: Date },
+    lastRoundPauseReason: { type: String, trim: true, maxlength: 500 },
+    reminder48hSentAt: { type: Date },
+    reminder24hSentAt: { type: Date },
     isCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
+
+groupAjoSchema.index({ status: 1, roundStatus: 1, roundDueAt: 1 });
 
 export const GroupAjoModel = mongoose.model("GroupAjo", groupAjoSchema);

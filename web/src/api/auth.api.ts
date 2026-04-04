@@ -42,8 +42,12 @@ export async function logout(): Promise<{ success: boolean; message: string }> {
 export async function me(): Promise<{
   success: boolean;
   user: PublicUser & {
+    phone?: string;
     basicKycCompleted?: boolean;
     kycTier?: number;
+    reliabilityScore?: number;
+    isRestricted?: boolean;
+    isFlagged?: boolean;
     profileImage?: string | null;
     wallets?: { main?: number };
   };
@@ -58,6 +62,7 @@ export async function submitTier1Kyc(values: {
   residentialAddress: string;
   accountNumber: string;
   bankName: string;
+  accountName: string;
 }): Promise<{ success: boolean; message: string }> {
   const { data } = await api.post("/auth/kyc/tier1", values);
   return data;

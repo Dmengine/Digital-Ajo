@@ -7,7 +7,21 @@ export const initializeDeposit = async (email: string, userId: string, amount: n
     amount: amount * 100,
     metadata: { userId },
   });
-  return data.data.authorization_url as string;
+  return {
+    authorizationUrl: data.data.authorization_url as string,
+    reference: data.data.reference as string,
+  };
+};
+
+export const verifyDepositByReference = async (reference: string) => {
+  const paystack = getPaystack();
+  const { data } = await paystack.get(`/transaction/verify/${encodeURIComponent(reference)}`);
+  return data?.data as {
+    status?: string;
+    amount?: number;
+    reference?: string;
+    metadata?: { userId?: string; userID?: string };
+  };
 };
 
 export const chargeAuthorization = async (authCode: string, email: string, amount: number) => {

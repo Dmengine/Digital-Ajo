@@ -8,6 +8,7 @@ import { env } from "./config/env";
 import apiRoutes from "./routes/index";
 import { errorHandler } from "./middleware/errorHandler";
 import { attachChatSocket } from "./socket/chatSocket";
+import { startContributionCycleJob } from "./jobs/contributionCycle.job";
 
 dotenv.config();
 
@@ -76,3 +77,4 @@ httpServer.listen(PORT, () => {
 });
 
 void connectDB();
+startContributionCycleJob();

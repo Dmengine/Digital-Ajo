@@ -2,6 +2,7 @@ import { api } from "./client";
 
 export type GroupType = "low" | "medium" | "high" | "premium";
 export type GroupStatus = "open" | "active" | "completed" | "cancelled";
+export type GroupRoundStatus = "active" | "paused" | "completed";
 export type GroupFrequency = "daily" | "weekly" | "monthly";
 
 export type GroupBrowseItem = {
@@ -64,6 +65,8 @@ export type GroupDashboardMember = {
   bufferHeld: number;
   completedContributions: number;
   failedContributions: number;
+  unpaidContributions: number;
+  defaultedContributions: number;
   pendingContributions: number;
   totalPaid: number;
 };
@@ -75,6 +78,9 @@ export async function getGroupDashboard(id: string): Promise<{
     _id: string;
     name: string;
     currentRound: number;
+    roundStatus?: GroupRoundStatus;
+    roundDueAt?: string;
+    roundGraceEndsAt?: string;
     contributionAmount: number;
     frequency: string;
     status: string;

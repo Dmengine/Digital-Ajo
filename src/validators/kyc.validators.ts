@@ -8,5 +8,6 @@ export const submitTier1KycSchema = Joi.object({
   residentialAddress: Joi.string().trim().min(5).max(500).required(),
   accountNumber: Joi.string().trim().min(4).max(20).required(),
   bankName: Joi.string().trim().min(2).max(120).required(),
+  accountName: Joi.string().trim().min(2).max(120).required(),
 });
 

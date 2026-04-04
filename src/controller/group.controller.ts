@@ -7,7 +7,11 @@ import type { GroupRiskType } from "../models/groupAjo.model";
 import { ContributionModel } from "../models/contribution.model";
 import { GroupMessageModel } from "../models/groupMessage.model";
 import { notify } from "../services/notification.service";
-import { assessGroupEligibility, bufferRequiredForGroupType } from "../services/eligibility.service";
+import {
+  assessGroupEligibility,
+  bufferRequiredForGroupType,
+  canTakeEarlyPayoutPosition,
+} from "../services/eligibility.service";
 import { createGroupChatMessage } from "../services/groupChat.service";
 import { requireGroupMember } from "../services/groupMember.service";
 import { HttpError } from "../errors/HttpError";
@@ -36,6 +40,8 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
     {
       kycTier: creator.kycTier as 1 | 2 | 3,
       basicKycCompleted: creator.basicKycCompleted,
+      reliabilityScore: creator.reliabilityScore,
+      isRestricted: creator.isRestricted,
     },
     groupType
   );
@@ -49,6 +55,8 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
       {
         kycTier: u.kycTier as 1 | 2 | 3,
         basicKycCompleted: u.basicKycCompleted,
+        reliabilityScore: u.reliabilityScore,
+        isRestricted: u.isRestricted,
       },
       groupType
     );
@@ -66,6 +74,15 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
       bufferHeld: 0,
     })),
   ];
+
+  for (const member of roster) {
+    const target = member.user.toString() === creator._id.toString() ? creator : additionalUsers.find((u) => u._id.equals(member.user));
+    const score = target?.reliabilityScore ?? 100;
+    const orderCheck = canTakeEarlyPayoutPosition(score, member.order, roster.length);
+    if (!orderCheck.ok) {
+      throw new HttpError(400, `Member at position ${member.order}: ${orderCheck.reason}`);
+    }
+  }
 
   const inviteCode = generateInviteCode();
   const bufferRequired = bufferRequiredForGroupType(groupType);
@@ -200,6 +217,8 @@ export const joinGroupByInvite = asyncHandler(async (req: Request, res: Response
     {
       kycTier: user.kycTier as 1 | 2 | 3,
       basicKycCompleted: user.basicKycCompleted,
+      reliabilityScore: user.reliabilityScore,
+      isRestricted: user.isRestricted,
     },
     group.groupType as GroupRiskType
   );
@@ -233,6 +252,8 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
     _id: mongoose.Types.ObjectId;
     completedCount: number;
     failedCount: number;
+    unpaidCount: number;
+    defaultedCount: number;
     pendingCount: number;
     totalPaid: number;
   }>([
@@ -242,6 +263,8 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
         _id: "$user",
         completedCount: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
         failedCount: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+        unpaidCount: { $sum: { $cond: [{ $eq: ["$status", "unpaid"] }, 1, 0] } },
+        defaultedCount: { $sum: { $cond: [{ $eq: ["$status", "defaulted"] }, 1, 0] } },
         pendingCount: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
         totalPaid: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, "$amount", 0] } },
       },
@@ -268,12 +291,16 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
       bufferHeld: m.bufferHeld,
       completedContributions: st?.completedCount ?? 0,
       failedContributions: st?.failedCount ?? 0,
+      unpaidContributions: st?.unpaidCount ?? 0,
+      defaultedContributions: st?.defaultedCount ?? 0,
       pendingContributions: st?.pendingCount ?? 0,
       totalPaid: st?.totalPaid ?? 0,
     };
   });
 
-  const defaulters = members.filter((r) => r.failedContributions > 0);
+  const defaulters = members.filter(
+    (r) => r.failedContributions > 0 || r.unpaidContributions > 0 || r.defaultedContributions > 0
+  );
 
   res.status(200).json({
     success: true,
@@ -346,6 +373,8 @@ export const addGroupMember = asyncHandler(async (req: Request, res: Response) =
     {
       kycTier: newUser.kycTier as 1 | 2 | 3,
       basicKycCompleted: newUser.basicKycCompleted,
+      reliabilityScore: newUser.reliabilityScore,
+      isRestricted: newUser.isRestricted,
     },
     group.groupType as GroupRiskType
   );

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.transferFunds = exports.createTransferRecipient = exports.chargeAuthorization = exports.initializeDeposit = void 0;
+exports.transferFunds = exports.createTransferRecipient = exports.chargeAuthorization = exports.verifyDepositByReference = exports.initializeDeposit = void 0;
 const paystack_1 = require("../mongodb/paystack");
 const initializeDeposit = (email, userId, amount) => __awaiter(void 0, void 0, void 0, function* () {
     const paystack = (0, paystack_1.getPaystack)();
@@ -18,9 +18,18 @@ const initializeDeposit = (email, userId, amount) => __awaiter(void 0, void 0, v
         amount: amount * 100,
         metadata: { userId },
     });
-    return data.data.authorization_url;
+    return {
+        authorizationUrl: data.data.authorization_url,
+        reference: data.data.reference,
+    };
 });
 exports.initializeDeposit = initializeDeposit;
+const verifyDepositByReference = (reference) => __awaiter(void 0, void 0, void 0, function* () {
+    const paystack = (0, paystack_1.getPaystack)();
+    const { data } = yield paystack.get(`/transaction/verify/${encodeURIComponent(reference)}`);
+    return data === null || data === void 0 ? void 0 : data.data;
+});
+exports.verifyDepositByReference = verifyDepositByReference;
 const chargeAuthorization = (authCode, email, amount) => __awaiter(void 0, void 0, void 0, function* () {
     const paystack = (0, paystack_1.getPaystack)();
     const { data } = yield paystack.post("/transaction/charge_authorization", {

@@ -22,6 +22,13 @@ const userSchema = new mongoose_1.default.Schema({
     kycTier: { type: Number, enum: [1, 2, 3], default: 1 },
     reliabilityScore: { type: Number, default: 100, min: 0, max: 100 },
     completedAjoCycles: { type: Number, default: 0, min: 0 },
+    missedPaymentsCount: { type: Number, default: 0, min: 0 },
+    defaultedPaymentsCount: { type: Number, default: 0, min: 0 },
+    isRestricted: { type: Boolean, default: false },
+    restrictionReason: { type: String, trim: true, maxlength: 500 },
+    restrictedUntil: { type: Date },
+    isFlagged: { type: Boolean, default: false },
+    flagReason: { type: String, trim: true, maxlength: 500 },
     tokenVersion: { type: Number, default: 0, min: 0 },
     /** MVP: Basic KYC must be completed before a user can create/join groups. */
     basicKycCompleted: { type: Boolean, default: false },
@@ -30,9 +37,29 @@ const userSchema = new mongoose_1.default.Schema({
     bankAccount: {
         accountNumber: { type: String },
         bankName: { type: String },
-        // Paystack authorization codes/token-like values must NOT be stored server-side.
-        // Rely on Paystack vault / references instead of persisting sensitive card auth data.
+        accountName: { type: String },
+        // Never store card PAN/CVV. This token is provided by Paystack for recurring charges.
+        autoDebitAuthorizationCode: { type: String, select: false },
         recipientCode: { type: String },
+    },
+    phoneVerification: {
+        verified: { type: Boolean, default: false },
+        otpCodeHash: { type: String, select: false },
+        otpExpiresAt: { type: Date },
+        lastSentAt: { type: Date },
+        verifiedAt: { type: Date },
+    },
+    kycProfile: {
+        verified: { type: Boolean, default: false },
+        identityType: { type: String, enum: ["bvn", "nin"] },
+        identityLast4: { type: String },
+        legalName: { type: String },
+        verifiedBankAccountName: { type: String },
+        verifiedAt: { type: Date },
+    },
+    security: {
+        transactionPinHash: { type: String, select: false },
+        otpRequiredForPayout: { type: Boolean, default: false },
     },
 }, { timestamps: true });
 userSchema.set("toJSON", {
@@ -40,6 +67,16 @@ userSchema.set("toJSON", {
         const o = ret;
         delete o.password;
         delete o.__v;
+        if (o.bankAccount && typeof o.bankAccount === "object") {
+            delete o.bankAccount.autoDebitAuthorizationCode;
+        }
+        if (o.security && typeof o.security === "object") {
+            delete o.security.transactionPinHash;
+        }
+        if (o.phoneVerification && typeof o.phoneVerification === "object") {
+            delete o.phoneVerification.otpCodeHash;
+            delete o.phoneVerification.otpExpiresAt;
+        }
         return o;
     },
 });

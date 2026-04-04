@@ -94,7 +94,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const me = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
   const user = await UserModel.findById(userId).select(
-    "name email username kycTier basicKycCompleted profileImage wallets.main"
+    "name email username phone kycTier basicKycCompleted profileImage wallets.main reliabilityScore isRestricted isFlagged"
   );
   if (!user) throw new HttpError(404, "User not found");
 
@@ -105,9 +105,13 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       username: user.username,
+      phone: user.phone,
       kycTier: user.kycTier,
       basicKycCompleted: user.basicKycCompleted,
       profileImage: user.profileImage ?? null,
+      reliabilityScore: user.reliabilityScore,
+      isRestricted: user.isRestricted,
+      isFlagged: user.isFlagged,
       wallets: {
         main: user.wallets?.main ?? 0,
       },
@@ -117,7 +121,12 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
 
 export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
-  const { accountNumber, bankName } = req.body as { accountNumber: string; bankName: string };
+  const { bvnOrNin, accountNumber, bankName, accountName } = req.body as {
+    bvnOrNin: string;
+    accountNumber: string;
+    bankName: string;
+    accountName: string;
+  };
 
   const user = await UserModel.findByIdAndUpdate(
     userId,
@@ -134,6 +143,15 @@ export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) =
   if (!user.bankAccount) user.bankAccount = {};
   user.bankAccount.accountNumber = accountNumber;
   user.bankAccount.bankName = bankName;
+  user.bankAccount.accountName = accountName;
+  user.kycProfile = {
+    verified: true,
+    identityType: bvnOrNin.trim().length === 11 ? "bvn" : "nin",
+    identityLast4: bvnOrNin.trim().slice(-4),
+    legalName: user.name,
+    verifiedBankAccountName: accountName,
+    verifiedAt: new Date(),
+  } as any;
   await user.save();
 
   res.status(200).json({ success: true, message: "Tier 1 KYC submitted successfully" });

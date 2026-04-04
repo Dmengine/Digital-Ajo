@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
-import { initDeposit, withdraw } from "../api/wallet.api";
+import { initDeposit, verifyDeposit, withdraw } from "../api/wallet.api";
 import { me as fetchMe } from "../api/auth.api";
 import { useAuthStore } from "../store/authStore";
 import { formatNaira } from "../utils/currency";
@@ -13,7 +13,7 @@ export default function Wallet() {
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
 
-  const [amount, setAmount] = useState<number | "">("");
+  const [amount, setAmount] = useState("");
   const token = useAuthStore((state) => state.token);
 
   const { data: meData, isFetching, refetch } = useQuery({
@@ -34,13 +34,40 @@ export default function Wallet() {
     mutationFn: (amt: number) => withdraw(amt),
   });
 
-  const canSubmit = useMemo(() => {
-    if (amount === "") return false;
-    const amt = Number(amount);
-    return amountSchema.safeParse(amt).success;
+  const parsedAmount = useMemo(() => {
+    const trimmed = amount.trim();
+    if (!trimmed) return null;
+    const value = Number(trimmed);
+    return Number.isFinite(value) ? value : null;
   }, [amount]);
 
+  const canSubmit = useMemo(() => {
+    if (parsedAmount === null) return false;
+    return amountSchema.safeParse(parsedAmount).success;
+  }, [parsedAmount]);
+
   const resetAmount = () => setAmount("");
+  const resetWithdrawState = () => {
+    resetAmount();
+  };
+
+  const pollDepositSettlement = async (reference: string) => {
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      try {
+        const result = await verifyDeposit(reference);
+        if (result.settled) {
+          await refetch();
+          return;
+        }
+      } catch {
+        // Keep trying; webhook or verification may lag shortly after checkout.
+      }
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5000);
+      });
+    }
+    await refetch();
+  };
 
   return (
     <div className="space-y-4">
@@ -68,7 +95,7 @@ export default function Wallet() {
             <button
               onClick={() => {
                 setWithdrawOpen(true);
-                resetAmount();
+                resetWithdrawState();
               }}
               className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
             >
@@ -100,7 +127,7 @@ export default function Wallet() {
             <div className="mt-4 space-y-3">
               <input
                 value={amount}
-                onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) => setAmount(e.target.value)}
                 inputMode="numeric"
                 placeholder="Amount (₦)"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
@@ -115,12 +142,12 @@ export default function Wallet() {
               <button
                 disabled={!canSubmit || depositMut.isPending}
                 onClick={async () => {
-                  if (amount === "") return;
-                  const res = await depositMut.mutateAsync(Number(amount));
+                  if (parsedAmount === null) return;
+                  const res = await depositMut.mutateAsync(parsedAmount);
                   window.open(res.paymentURL, "_blank", "noopener,noreferrer");
                   setDepositOpen(false);
                   resetAmount();
-                  void refetch();
+                  void pollDepositSettlement(res.reference);
                 }}
                 className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
               >
@@ -151,7 +178,7 @@ export default function Wallet() {
             <div className="mt-4 space-y-3">
               <input
                 value={amount}
-                onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) => setAmount(e.target.value)}
                 inputMode="numeric"
                 placeholder="Amount (₦)"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
@@ -166,10 +193,10 @@ export default function Wallet() {
               <button
                 disabled={!canSubmit || withdrawMut.isPending}
                 onClick={async () => {
-                  if (amount === "") return;
-                  await withdrawMut.mutateAsync(Number(amount));
+                  if (parsedAmount === null) return;
+                  await withdrawMut.mutateAsync(parsedAmount);
                   setWithdrawOpen(false);
-                  resetAmount();
+                  resetWithdrawState();
                   void refetch();
                 }}
                 className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
@@ -178,7 +205,7 @@ export default function Wallet() {
               </button>
 
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                MVP note: bank account linking is not implemented in this UI yet.
+                Ensure your bank account details are linked before withdrawing.
               </div>
             </div>
           </div>

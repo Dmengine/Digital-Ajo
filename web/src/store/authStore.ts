@@ -5,9 +5,14 @@ export type PublicUser = {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
+  phoneVerified?: boolean;
   username: string;
   kycTier?: number;
   basicKycCompleted?: boolean;
+  reliabilityScore?: number;
+  isRestricted?: boolean;
+  isFlagged?: boolean;
   profileImage?: string | null;
   wallets?: {
     main?: number;

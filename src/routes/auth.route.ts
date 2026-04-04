@@ -1,9 +1,19 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { requireAuth } from "../middleware/auth";
-import { login, logout, me, register, submitTier1Kyc, uploadAvatar } from "../controller/auth.controller";
+import {
+  login,
+  logout,
+  me,
+  register,
+  submitTier1Kyc,
+  uploadAvatar,
+} from "../controller/auth.controller";
 import { validateBody } from "../middleware/validate";
-import { registerSchema, loginSchema } from "../validators/auth.validators";
+import {
+  registerSchema,
+  loginSchema,
+} from "../validators/auth.validators";
 import { submitTier1KycSchema } from "../validators/kyc.validators";
 import { uploadAvatarSchema } from "../validators/avatar.validators";
 

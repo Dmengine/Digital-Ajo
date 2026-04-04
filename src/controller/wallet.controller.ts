@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { UserModel } from "../models/user.model";
 import { notify } from "../services/notification.service";
 import { applyPaystackDeposit, debitWallet } from "../services/wallet.service";
-import { initializeDeposit } from "../services/paystack.services";
+import { initializeDeposit, verifyDepositByReference } from "../services/paystack.services";
 import { verifyPaystackSignature } from "../utils/paystackWebhook";
 import { env } from "../config/env";
 import { HttpError } from "../errors/HttpError";
@@ -15,8 +15,11 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
 
   // Real deposit via Paystack (customer pays from their bank/card).
   let paymentURL: string;
+  let reference: string;
   try {
-    paymentURL = await initializeDeposit(user.email, user._id.toString(), amount);
+    const initialized = await initializeDeposit(user.email, user._id.toString(), amount);
+    paymentURL = initialized.authorizationUrl;
+    reference = initialized.reference;
   } catch (err: any) {
     console.error("Paystack initDeposit error:", {
       status: err?.response?.status,
@@ -38,7 +41,41 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
     );
   }
   await notify(user._id.toString(), `You initiated a deposit of ₦${amount}. Please complete the payment.`);
-  res.json({ success: true, paymentURL });
+  res.json({ success: true, paymentURL, reference });
+});
+
+export const verifyDeposit = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).userId as string;
+  const { reference } = req.body as { reference: string };
+  const ref = reference?.trim();
+  if (!ref) throw new HttpError(400, "Deposit reference is required");
+
+  let verified;
+  try {
+    verified = await verifyDepositByReference(ref);
+  } catch {
+    throw new HttpError(502, "Could not verify deposit with Paystack");
+  }
+
+  const status = typeof verified?.status === "string" ? verified.status : "";
+  if (status !== "success") {
+    res.status(200).json({ success: true, settled: false, message: "Payment not completed yet" });
+    return;
+  }
+
+  const metaUserId = verified?.metadata?.userId ?? verified?.metadata?.userID;
+  if (metaUserId && metaUserId !== userId) {
+    throw new HttpError(403, "Reference does not belong to this user");
+  }
+
+  const amountKobo = verified?.amount;
+  if (typeof amountKobo !== "number" || !Number.isFinite(amountKobo) || amountKobo <= 0) {
+    throw new HttpError(400, "Invalid verified amount");
+  }
+
+  const amount = amountKobo / 100;
+  await applyPaystackDeposit(userId, amount, ref);
+  res.status(200).json({ success: true, settled: true, message: "Deposit confirmed and wallet credited" });
 });
 
 export const webhook = asyncHandler(async (req: Request, res: Response) => {
@@ -85,6 +122,18 @@ export const webhook = asyncHandler(async (req: Request, res: Response) => {
     }
 
     await applyPaystackDeposit(userId, amount, reference);
+
+    const authCode = event?.data?.authorization?.authorization_code;
+    if (typeof authCode === "string" && authCode.trim()) {
+      await UserModel.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            "bankAccount.autoDebitAuthorizationCode": authCode.trim(),
+          },
+        }
+      );
+    }
   }
 
   res.sendStatus(200);

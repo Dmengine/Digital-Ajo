@@ -26,5 +26,6 @@ const withdrawLimiter = (0, express_rate_limit_1.default)({
 });
 router.post("/webhook", wallet_controller_1.webhook);
 router.post("/deposit/init", auth_1.requireAuth, walletMutationLimiter, (0, validate_1.validateBody)(wallet_validators_1.depositInitSchema), wallet_controller_1.initDeposit);
+router.post("/deposit/verify", auth_1.requireAuth, walletMutationLimiter, (0, validate_1.validateBody)(wallet_validators_1.depositVerifySchema), wallet_controller_1.verifyDeposit);
 router.post("/withdraw", auth_1.requireAuth, withdrawLimiter, (0, validate_1.validateBody)(wallet_validators_1.withdrawSchema), wallet_controller_1.withdraw);
 exports.default = router;
