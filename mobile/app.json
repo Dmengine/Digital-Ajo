@@ -22,13 +22,17 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.oladimeji440.contripaymobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiBaseUrl": "http://localhost:3001/api"
+      "apiBaseUrl": "https://digital-ajo.onrender.com/api",
+      "eas": {
+        "projectId": "6bcaf8ba-8c9e-41d8-81f0-cc59a441c36d"
+      }
     }
   }
 }
