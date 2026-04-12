@@ -5,6 +5,7 @@ import { UserModel } from "../models/user.model";
 import { env } from "../config/env";
 import { HttpError } from "../errors/HttpError";
 import { asyncHandler } from "../middleware/asyncHandler";
+import { uploadAvatarToCloudinary } from "../services/cloudinary.service";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, phone, password, username } = req.body as {
@@ -121,10 +122,11 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
 
 export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
-  const { bvnOrNin, accountNumber, bankName, accountName } = req.body as {
+  const { bvnOrNin, accountNumber, bankName, bankCode, accountName } = req.body as {
     bvnOrNin: string;
     accountNumber: string;
     bankName: string;
+    bankCode?: string;
     accountName: string;
   };
 
@@ -143,6 +145,7 @@ export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) =
   if (!user.bankAccount) user.bankAccount = {};
   user.bankAccount.accountNumber = accountNumber;
   user.bankAccount.bankName = bankName;
+  user.bankAccount.bankCode = bankCode;
   user.bankAccount.accountName = accountName;
   user.kycProfile = {
     verified: true,
@@ -160,9 +163,10 @@ export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) =
 export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
   const { imageDataUrl } = req.body as { imageDataUrl: string };
+  const imageUrl = await uploadAvatarToCloudinary(imageDataUrl, userId);
 
-  const user = await UserModel.findByIdAndUpdate(userId, { profileImage: imageDataUrl }, { new: true });
+  const user = await UserModel.findByIdAndUpdate(userId, { profileImage: imageUrl }, { new: true });
   if (!user) throw new HttpError(404, "User not found");
 
-  res.status(200).json({ success: true, message: "Avatar updated successfully" });
+  res.status(200).json({ success: true, message: "Avatar updated successfully", profileImage: imageUrl });
 });

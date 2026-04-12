@@ -67,5 +67,16 @@ export const env = {
         process.env.TWILIO_AUTH_TOKEN?.trim() &&
         process.env.TWILIO_FROM_NUMBER?.trim()
     ),
+  cloudinaryCloudName: () => required("CLOUDINARY_CLOUD_NAME"),
+  cloudinaryApiKey: () => required("CLOUDINARY_API_KEY"),
+  cloudinaryApiSecret: () => required("CLOUDINARY_API_SECRET"),
+  cloudinaryConfigured: () =>
+    Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+        process.env.CLOUDINARY_API_KEY?.trim() &&
+        process.env.CLOUDINARY_API_SECRET?.trim()
+    ),
+  mobileAppReturnUrl: () => process.env.MOBILE_APP_RETURN_URL?.trim() || "contripay://wallet",
+  redisUrl: () => process.env.REDIS_URL?.trim() || null,
   corsOrigin: resolveCorsOrigin(),
 };

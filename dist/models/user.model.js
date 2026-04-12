@@ -37,6 +37,7 @@ const userSchema = new mongoose_1.default.Schema({
     bankAccount: {
         accountNumber: { type: String },
         bankName: { type: String },
+        bankCode: { type: String },
         accountName: { type: String },
         // Never store card PAN/CVV. This token is provided by Paystack for recurring charges.
         autoDebitAuthorizationCode: { type: String, select: false },

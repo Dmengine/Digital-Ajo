@@ -1,11 +1,12 @@
 import { getPaystack } from "../mongodb/paystack";
 
-export const initializeDeposit = async (email: string, userId: string, amount: number) => {
+export const initializeDeposit = async (email: string, userId: string, amount: number, callbackUrl?: string) => {
   const paystack = getPaystack();
   const { data } = await paystack.post("/transaction/initialize", {
     email,
     amount: amount * 100,
     metadata: { userId },
+    ...(callbackUrl ? { callback_url: callbackUrl } : {}),
   });
   return {
     authorizationUrl: data.data.authorization_url as string,
@@ -46,13 +47,22 @@ export const createTransferRecipient = async (name: string, accountNumber: strin
   return data.data.recipient_code as string;
 };
 
-export const transferFunds = async (recipientCode: string, amount: number, reason = "Payout") => {
+export const transferFunds = async (
+  recipientCode: string,
+  amount: number,
+  reason = "Payout",
+  idempotencyKey?: string
+) => {
   const paystack = getPaystack();
-  const { data } = await paystack.post("/transfer", {
-    source: "balance",
-    amount: amount * 100,
-    recipient: recipientCode,
-    reason,
-  });
+  const { data } = await paystack.post(
+    "/transfer",
+    {
+      source: "balance",
+      amount: amount * 100,
+      recipient: recipientCode,
+      reason,
+    },
+    idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined
+  );
   return data;
 };

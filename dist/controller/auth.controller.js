@@ -19,6 +19,7 @@ const user_model_1 = require("../models/user.model");
 const env_1 = require("../config/env");
 const HttpError_1 = require("../errors/HttpError");
 const asyncHandler_1 = require("../middleware/asyncHandler");
+const cloudinary_service_1 = require("../services/cloudinary.service");
 exports.register = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, phone, password, username } = req.body;
     const existingUser = yield user_model_1.UserModel.findOne({ email });
@@ -109,7 +110,7 @@ exports.me = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, vo
 }));
 exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
-    const { bvnOrNin, accountNumber, bankName, accountName } = req.body;
+    const { bvnOrNin, accountNumber, bankName, bankCode, accountName } = req.body;
     const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, {
         kycTier: 1,
         basicKycCompleted: true,
@@ -121,6 +122,7 @@ exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaite
         user.bankAccount = {};
     user.bankAccount.accountNumber = accountNumber;
     user.bankAccount.bankName = bankName;
+    user.bankAccount.bankCode = bankCode;
     user.bankAccount.accountName = accountName;
     user.kycProfile = {
         verified: true,
@@ -136,8 +138,9 @@ exports.submitTier1Kyc = (0, asyncHandler_1.asyncHandler)((req, res) => __awaite
 exports.uploadAvatar = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
     const { imageDataUrl } = req.body;
-    const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, { profileImage: imageDataUrl }, { new: true });
+    const imageUrl = yield (0, cloudinary_service_1.uploadAvatarToCloudinary)(imageDataUrl, userId);
+    const user = yield user_model_1.UserModel.findByIdAndUpdate(userId, { profileImage: imageUrl }, { new: true });
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
-    res.status(200).json({ success: true, message: "Avatar updated successfully" });
+    res.status(200).json({ success: true, message: "Avatar updated successfully", profileImage: imageUrl });
 }));

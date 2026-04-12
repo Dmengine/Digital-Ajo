@@ -309,6 +309,9 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
       _id: group._id,
       name: group.name,
       currentRound: group.currentRound,
+      roundStatus: group.roundStatus,
+      roundDueAt: group.roundDueAt,
+      roundGraceEndsAt: group.roundGraceEndsAt,
       contributionAmount: group.contributionAmount,
       frequency: group.frequency,
       status: group.status,
@@ -409,6 +412,9 @@ export const removeGroupMember = asyncHandler(async (req: Request, res: Response
 
   const { group, isAdmin } = await requireGroupMember(groupId, adminId);
   if (!isAdmin) throw new HttpError(403, "Only the group admin can remove members");
+  if (group.roundStatus !== "completed") {
+    throw new HttpError(400, "Members can only be removed after the current cycle is completed");
+  }
 
   if (targetUserId === group.createdBy.toString()) {
     throw new HttpError(400, "Cannot remove the group admin");

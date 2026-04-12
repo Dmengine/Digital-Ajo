@@ -1,8 +1,18 @@
 import type { Request, Response } from "express";
 import { UserModel } from "../models/user.model";
 import { notify } from "../services/notification.service";
-import { applyPaystackDeposit, debitWallet } from "../services/wallet.service";
-import { initializeDeposit, verifyDepositByReference } from "../services/paystack.services";
+import {
+  applyPaystackDeposit,
+  attachWithdrawalTransferMetadata,
+  reverseWalletDebit,
+  withdrawWalletIdempotent,
+} from "../services/wallet.service";
+import {
+  createTransferRecipient,
+  initializeDeposit,
+  transferFunds,
+  verifyDepositByReference,
+} from "../services/paystack.services";
 import { verifyPaystackSignature } from "../utils/paystackWebhook";
 import { env } from "../config/env";
 import { HttpError } from "../errors/HttpError";
@@ -17,7 +27,7 @@ export const initDeposit = asyncHandler(async (req: Request, res: Response) => {
   let paymentURL: string;
   let reference: string;
   try {
-    const initialized = await initializeDeposit(user.email, user._id.toString(), amount);
+    const initialized = await initializeDeposit(user.email, user._id.toString(), amount, env.mobileAppReturnUrl());
     paymentURL = initialized.authorizationUrl;
     reference = initialized.reference;
   } catch (err: any) {
@@ -141,12 +151,76 @@ export const webhook = asyncHandler(async (req: Request, res: Response) => {
 
 export const withdraw = asyncHandler(async (req: Request, res: Response) => {
   const { amount } = req.body as { amount: number };
+  const bodyIdempotencyKey = (req.body as { idempotencyKey?: string }).idempotencyKey;
+  const headerIdempotencyKey = req.header("x-idempotency-key") ?? undefined;
+  const idempotencyKey = (bodyIdempotencyKey || headerIdempotencyKey || "").trim();
+  if (!idempotencyKey) {
+    throw new HttpError(400, "Idempotency key is required");
+  }
+
   const user = await UserModel.findById((req as any).userId);
   if (!user) throw new HttpError(404, "User not found");
   if (!user.bankAccount?.accountNumber || !user.bankAccount?.bankName) throw new HttpError(400, "No bank account linked");
 
-  await debitWallet(user._id.toString(), amount, "main");
-  await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
+  const { duplicate } = await withdrawWalletIdempotent(user._id.toString(), amount, idempotencyKey);
+
+  if (duplicate) {
+    res.status(200).json({
+      success: true,
+      duplicate: true,
+      message: "Withdrawal already processed",
+    });
+    return;
+  }
+
+  let recipientCode = user.bankAccount?.recipientCode;
+  if (!recipientCode) {
+    if (!user.bankAccount?.bankCode) {
+      await reverseWalletDebit(user._id.toString(), amount, {
+        reason: "withdrawal_failed_missing_bank_code",
+        idempotencyKey,
+      });
+      throw new HttpError(400, "Bank code is required to process withdrawal");
+    }
+    recipientCode = await createTransferRecipient(
+      user.bankAccount.accountName || user.name,
+      user.bankAccount.accountNumber,
+      user.bankAccount.bankCode
+    );
+    user.bankAccount.recipientCode = recipientCode;
+    await user.save();
+  }
+
+  try {
+    const transferResponse = await transferFunds(recipientCode, amount, "Ajo wallet withdrawal", idempotencyKey);
+    const transferStatus =
+      typeof transferResponse?.data?.status === "string"
+        ? transferResponse.data.status.toLowerCase().trim()
+        : "";
+
+    if (transferResponse?.status !== true || (transferStatus && transferStatus === "failed")) {
+      throw new Error("Transfer API did not confirm payout");
+    }
+
+    await attachWithdrawalTransferMetadata(user._id.toString(), idempotencyKey, {
+      transferCode: transferResponse?.data?.transfer_code,
+      reference: transferResponse?.data?.reference,
+      status: transferResponse?.data?.status,
+      recipientCode,
+    });
+  } catch (e) {
+    await reverseWalletDebit(user._id.toString(), amount, {
+      reason: "withdrawal_transfer_failed",
+      idempotencyKey,
+    });
+    const errorMessage = e instanceof Error ? e.message : "Transfer failed";
+    throw new HttpError(502, `Withdrawal transfer failed: ${errorMessage}`);
+  }
+
+  await notify(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`, {
+    amount,
+    idempotencyKey,
+  });
 
   res.status(200).json({
     success: true,

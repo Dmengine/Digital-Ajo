@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
+      <section className="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm text-slate-600 dark:text-slate-300">Welcome back</div>

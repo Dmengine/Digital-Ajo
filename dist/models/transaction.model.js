@@ -30,4 +30,9 @@ transactionSchema.index({ "metadata.paystackReference": 1 }, {
     sparse: true,
     partialFilterExpression: { "metadata.paystackReference": { $type: "string" } },
 });
+transactionSchema.index({ "metadata.idempotencyKey": 1 }, {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { "metadata.idempotencyKey": { $type: "string" } },
+});
 exports.TransactionModel = mongoose_1.default.model("Transaction", transactionSchema);

@@ -227,7 +227,7 @@ export default function GroupDetail() {
                   ) : null}
                 </div>
               </div>
-              <div className="rounded-2xl bg-gradient-to-br from-indigo-500/15 to-emerald-500/10 p-4">
+              <div className="rounded-2xl bg-linear-to-br from-indigo-500/15 to-emerald-500/10 p-4">
                 <div className="text-xs text-slate-600 dark:text-slate-300">Contribution</div>
                 <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-white">₦{group.contributionAmount}</div>
                 <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">Frequency: {group.frequency}</div>
@@ -273,7 +273,7 @@ export default function GroupDetail() {
                     </div>
                   ) : null}
                   <div className="mt-4 overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left text-sm">
+                    <table className="w-full min-w-160 text-left text-sm">
                       <thead>
                         <tr className="border-b border-white/10 text-xs text-slate-500 dark:text-slate-400">
                           <th className="py-2 pr-3 font-medium">Member</th>
@@ -490,7 +490,7 @@ export default function GroupDetail() {
                             {msg.sender?.name ?? msg.sender?.username ?? "Member"}
                           </div>
                         ) : null}
-                        <div className="whitespace-pre-wrap break-words">{msg.body}</div>
+                        <div className="whitespace-pre-wrap break-word">{msg.body}</div>
                         <div
                           className={[
                             "mt-1 text-[10px] opacity-80",

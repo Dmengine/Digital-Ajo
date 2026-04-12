@@ -128,15 +128,68 @@ exports.webhook = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 
     res.sendStatus(200);
 }));
 exports.withdraw = (0, asyncHandler_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const { amount } = req.body;
+    const bodyIdempotencyKey = req.body.idempotencyKey;
+    const headerIdempotencyKey = (_a = req.header("x-idempotency-key")) !== null && _a !== void 0 ? _a : undefined;
+    const idempotencyKey = (bodyIdempotencyKey || headerIdempotencyKey || "").trim();
+    if (!idempotencyKey) {
+        throw new HttpError_1.HttpError(400, "Idempotency key is required");
+    }
     const user = yield user_model_1.UserModel.findById(req.userId);
     if (!user)
         throw new HttpError_1.HttpError(404, "User not found");
-    if (!((_a = user.bankAccount) === null || _a === void 0 ? void 0 : _a.accountNumber) || !((_b = user.bankAccount) === null || _b === void 0 ? void 0 : _b.bankName))
+    if (!((_b = user.bankAccount) === null || _b === void 0 ? void 0 : _b.accountNumber) || !((_c = user.bankAccount) === null || _c === void 0 ? void 0 : _c.bankName))
         throw new HttpError_1.HttpError(400, "No bank account linked");
-    yield (0, wallet_service_1.debitWallet)(user._id.toString(), amount, "main");
-    yield (0, notification_service_1.notify)(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`);
+    const { duplicate } = yield (0, wallet_service_1.withdrawWalletIdempotent)(user._id.toString(), amount, idempotencyKey);
+    if (duplicate) {
+        res.status(200).json({
+            success: true,
+            duplicate: true,
+            message: "Withdrawal already processed",
+        });
+        return;
+    }
+    let recipientCode = (_d = user.bankAccount) === null || _d === void 0 ? void 0 : _d.recipientCode;
+    if (!recipientCode) {
+        if (!((_e = user.bankAccount) === null || _e === void 0 ? void 0 : _e.bankCode)) {
+            yield (0, wallet_service_1.reverseWalletDebit)(user._id.toString(), amount, {
+                reason: "withdrawal_failed_missing_bank_code",
+                idempotencyKey,
+            });
+            throw new HttpError_1.HttpError(400, "Bank code is required to process withdrawal");
+        }
+        recipientCode = yield (0, paystack_services_1.createTransferRecipient)(user.bankAccount.accountName || user.name, user.bankAccount.accountNumber, user.bankAccount.bankCode);
+        user.bankAccount.recipientCode = recipientCode;
+        yield user.save();
+    }
+    try {
+        const transferResponse = yield (0, paystack_services_1.transferFunds)(recipientCode, amount, "Ajo wallet withdrawal", idempotencyKey);
+        const transferStatus = typeof ((_f = transferResponse === null || transferResponse === void 0 ? void 0 : transferResponse.data) === null || _f === void 0 ? void 0 : _f.status) === "string"
+            ? transferResponse.data.status.toLowerCase().trim()
+            : "";
+        if ((transferResponse === null || transferResponse === void 0 ? void 0 : transferResponse.status) !== true || (transferStatus && transferStatus === "failed")) {
+            throw new Error("Transfer API did not confirm payout");
+        }
+        yield (0, wallet_service_1.attachWithdrawalTransferMetadata)(user._id.toString(), idempotencyKey, {
+            transferCode: (_g = transferResponse === null || transferResponse === void 0 ? void 0 : transferResponse.data) === null || _g === void 0 ? void 0 : _g.transfer_code,
+            reference: (_h = transferResponse === null || transferResponse === void 0 ? void 0 : transferResponse.data) === null || _h === void 0 ? void 0 : _h.reference,
+            status: (_j = transferResponse === null || transferResponse === void 0 ? void 0 : transferResponse.data) === null || _j === void 0 ? void 0 : _j.status,
+            recipientCode,
+        });
+    }
+    catch (e) {
+        yield (0, wallet_service_1.reverseWalletDebit)(user._id.toString(), amount, {
+            reason: "withdrawal_transfer_failed",
+            idempotencyKey,
+        });
+        const errorMessage = e instanceof Error ? e.message : "Transfer failed";
+        throw new HttpError_1.HttpError(502, `Withdrawal transfer failed: ${errorMessage}`);
+    }
+    yield (0, notification_service_1.notify)(user._id.toString(), `You have withdrawn ₦${amount} to your bank account`, {
+        amount,
+        idempotencyKey,
+    });
     res.status(200).json({
         success: true,
         message: "Withdrawal successful",

@@ -70,5 +70,15 @@ exports.env = {
             ((_b = process.env.TWILIO_AUTH_TOKEN) === null || _b === void 0 ? void 0 : _b.trim()) &&
             ((_c = process.env.TWILIO_FROM_NUMBER) === null || _c === void 0 ? void 0 : _c.trim()));
     },
+    cloudinaryCloudName: () => required("CLOUDINARY_CLOUD_NAME"),
+    cloudinaryApiKey: () => required("CLOUDINARY_API_KEY"),
+    cloudinaryApiSecret: () => required("CLOUDINARY_API_SECRET"),
+    cloudinaryConfigured: () => {
+        var _a, _b, _c;
+        return Boolean(((_a = process.env.CLOUDINARY_CLOUD_NAME) === null || _a === void 0 ? void 0 : _a.trim()) &&
+            ((_b = process.env.CLOUDINARY_API_KEY) === null || _b === void 0 ? void 0 : _b.trim()) &&
+            ((_c = process.env.CLOUDINARY_API_SECRET) === null || _c === void 0 ? void 0 : _c.trim()));
+    },
+    redisUrl: () => { var _a; return ((_a = process.env.REDIS_URL) === null || _a === void 0 ? void 0 : _a.trim()) || null; },
     corsOrigin: resolveCorsOrigin(),
 };

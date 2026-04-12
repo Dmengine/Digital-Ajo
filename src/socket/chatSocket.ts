@@ -1,5 +1,7 @@
 import type { Server as HttpServer } from "http";
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { createClient } from "redis";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { env } from "../config/env";
@@ -7,6 +9,7 @@ import { UserModel } from "../models/user.model";
 import { createGroupChatMessage } from "../services/groupChat.service";
 import { requireGroupMember } from "../services/groupMember.service";
 import { HttpError } from "../errors/HttpError";
+import { setSocketServer, userRoom } from "./realtime";
 
 function roomGroup(groupId: string) {
   return `group:${groupId}`;
@@ -22,6 +25,22 @@ export function attachChatSocket(httpServer: HttpServer) {
       credentials: true,
     },
   });
+
+  setSocketServer(io);
+
+  const redisUrl = env.redisUrl();
+  if (redisUrl) {
+    const pubClient = createClient({ url: redisUrl });
+    const subClient = pubClient.duplicate();
+
+    Promise.all([pubClient.connect(), subClient.connect()])
+      .then(() => {
+        io.adapter(createAdapter(pubClient, subClient));
+      })
+      .catch((e) => {
+        console.error("[socket.io] redis adapter init failed", e);
+      });
+  }
 
   io.use(async (socket, next) => {
     try {
@@ -62,6 +81,7 @@ export function attachChatSocket(httpServer: HttpServer) {
 
   io.on("connection", (socket) => {
     const userId = (socket.data as { userId: string }).userId;
+    void socket.join(userRoom(userId));
 
     socket.on("chat:join", async (payload: { groupId?: string }, cb) => {
       const groupId = payload?.groupId;

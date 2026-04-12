@@ -9,6 +9,9 @@ export type GroupAjoDoc = mongoose.Document & {
   groupType: GroupRiskType;
   members: Array<{ user: mongoose.Types.ObjectId; order: number; hasReceived: boolean; bufferHeld: number }>;
   currentRound: number;
+  roundStatus: "active" | "paused" | "completed";
+  roundDueAt?: Date;
+  roundGraceEndsAt?: Date;
   contributionAmount: number;
   frequency: string;
   status: string;

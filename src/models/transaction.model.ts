@@ -33,4 +33,13 @@ transactionSchema.index(
   }
 );
 
+transactionSchema.index(
+  { "metadata.idempotencyKey": 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { "metadata.idempotencyKey": { $type: "string" } },
+  }
+);
+
 export const TransactionModel = mongoose.model("Transaction", transactionSchema);

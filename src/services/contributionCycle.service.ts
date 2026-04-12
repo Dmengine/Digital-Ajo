@@ -39,6 +39,15 @@ function penaltyRate(): number {
   return raw;
 }
 
+function autoDebitIdempotencyKey(
+  mode: "wallet" | "card" | "fee",
+  groupId: mongoose.Types.ObjectId,
+  cycle: number,
+  userId: mongoose.Types.ObjectId
+): string {
+  return `${mode}:${groupId.toString()}:${cycle}:${userId.toString()}`;
+}
+
 async function ensureRoundContributionRows(group: any, dueAt: Date, graceEndsAt: Date) {
   await Promise.all(
     group.members.map((member: any) =>
@@ -65,32 +74,84 @@ async function ensureRoundContributionRows(group: any, dueAt: Date, graceEndsAt:
   );
 }
 
-async function debitWalletForContribution(userId: mongoose.Types.ObjectId, amount: number, metadata: Record<string, unknown>) {
-  const user = await UserModel.findOneAndUpdate(
-    { _id: userId, "wallets.main": { $gte: amount } },
-    { $inc: { "wallets.main": -amount } },
-    { new: true }
-  );
-  if (!user) return false;
-
-  await TransactionModel.create({
+async function debitWalletForContribution(
+  userId: mongoose.Types.ObjectId,
+  amount: number,
+  metadata: Record<string, unknown>,
+  idempotencyKey: string
+) {
+  const existing = await TransactionModel.findOne({
     user: userId,
     type: "auto-debit",
-    amount,
-    walletType: "main",
     status: "success",
-    metadata,
-  });
-  return true;
+    "metadata.idempotencyKey": idempotencyKey,
+  }).lean();
+  if (existing) return true;
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const user = await UserModel.findOneAndUpdate(
+      { _id: userId, "wallets.main": { $gte: amount } },
+      { $inc: { "wallets.main": -amount } },
+      { new: true, session }
+    );
+    if (!user) {
+      await session.abortTransaction();
+      return false;
+    }
+
+    await TransactionModel.create(
+      [
+        {
+          user: userId,
+          type: "auto-debit",
+          amount,
+          walletType: "main",
+          status: "success",
+          metadata: { ...metadata, idempotencyKey },
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    return true;
+  } catch (e: unknown) {
+    await session.abortTransaction();
+    if (typeof e === "object" && e !== null && "code" in e && (e as { code?: number }).code === 11000) {
+      return true;
+    }
+    throw e;
+  } finally {
+    session.endSession();
+  }
 }
 
-async function tryCardAutoDebit(userId: mongoose.Types.ObjectId, amount: number, metadata: Record<string, unknown>) {
+async function tryCardAutoDebit(
+  userId: mongoose.Types.ObjectId,
+  amount: number,
+  metadata: Record<string, unknown>,
+  idempotencyKey: string
+) {
+  const existing = await TransactionModel.findOne({
+    user: userId,
+    type: "auto-debit",
+    status: "success",
+    "metadata.idempotencyKey": idempotencyKey,
+  }).lean();
+  if (existing) return true;
+
   const user = await UserModel.findById(userId).select("email +bankAccount.autoDebitAuthorizationCode");
   if (!user || !user.email || !user.bankAccount?.autoDebitAuthorizationCode) return false;
 
   try {
     const result = await chargeAuthorization(user.bankAccount.autoDebitAuthorizationCode, user.email, amount);
-    if (!result?.status) return false;
+    const providerStatus =
+      typeof result?.data?.status === "string" ? result.data.status.toLowerCase().trim() : "";
+    const success = result?.status === true && providerStatus === "success";
+    if (!success) return false;
 
     await TransactionModel.create({
       user: userId,
@@ -98,17 +159,18 @@ async function tryCardAutoDebit(userId: mongoose.Types.ObjectId, amount: number,
       amount,
       walletType: "main",
       status: "success",
-      metadata: { ...metadata, source: "paystack_card_fallback" },
+      metadata: { ...metadata, source: "paystack_card_fallback", idempotencyKey },
     });
     return true;
-  } catch {
+  } catch (e: unknown) {
+    const reason = e instanceof Error ? e.message : "card_debit_failed";
     await TransactionModel.create({
       user: userId,
       type: "auto-debit",
       amount,
       walletType: "main",
       status: "failed",
-      metadata: { ...metadata, source: "paystack_card_fallback" },
+      metadata: { ...metadata, source: "paystack_card_fallback", reason },
     });
     return false;
   }
@@ -156,11 +218,16 @@ async function processDueGroup(group: any, now: Date) {
   for (const c of contributions) {
     if (c.status === "completed") continue;
 
-    const paid = await debitWalletForContribution(c.user as mongoose.Types.ObjectId, c.amount, {
-      groupAjo: group._id.toString(),
-      cycle: group.currentRound,
-      stage: "due_date",
-    });
+    const paid = await debitWalletForContribution(
+      c.user as mongoose.Types.ObjectId,
+      c.amount,
+      {
+        groupAjo: group._id.toString(),
+        cycle: group.currentRound,
+        stage: "due_date",
+      },
+      autoDebitIdempotencyKey("wallet", toObjectId(group._id), group.currentRound, c.user as mongoose.Types.ObjectId)
+    );
 
     if (paid) {
       c.status = "completed";
@@ -212,20 +279,51 @@ async function processDueGroup(group: any, now: Date) {
 
 async function applyPenaltyForDefault(userId: mongoose.Types.ObjectId, amount: number, groupId: mongoose.Types.ObjectId, cycle: number) {
   const fee = Math.max(100, Math.round(amount * penaltyRate()));
-  const debited = await UserModel.findOneAndUpdate(
-    { _id: userId, "wallets.main": { $gte: fee } },
-    { $inc: { "wallets.main": -fee } },
-    { new: true }
-  );
-
-  await TransactionModel.create({
+  const idempotencyKey = autoDebitIdempotencyKey("fee", groupId, cycle, userId);
+  const existing = await TransactionModel.findOne({
     user: userId,
     type: "fee",
-    amount: fee,
-    walletType: "main",
-    status: debited ? "success" : "failed",
-    metadata: { reason: "contribution_default", groupAjo: groupId.toString(), cycle },
-  });
+    "metadata.idempotencyKey": idempotencyKey,
+  }).lean();
+  if (existing) return fee;
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const debited = await UserModel.findOneAndUpdate(
+      { _id: userId, "wallets.main": { $gte: fee } },
+      { $inc: { "wallets.main": -fee } },
+      { new: true, session }
+    );
+
+    await TransactionModel.create(
+      [
+        {
+          user: userId,
+          type: "fee",
+          amount: fee,
+          walletType: "main",
+          status: debited ? "success" : "failed",
+          metadata: {
+            reason: "contribution_default",
+            groupAjo: groupId.toString(),
+            cycle,
+            idempotencyKey,
+          },
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+  } catch (e) {
+    await session.abortTransaction();
+    if (!(typeof e === "object" && e !== null && "code" in e && (e as { code?: number }).code === 11000)) {
+      throw e;
+    }
+  } finally {
+    session.endSession();
+  }
 
   return fee;
 }
@@ -242,19 +340,29 @@ async function processPausedGroup(group: any, now: Date) {
   for (const c of contributions) {
     if (c.nextRetryAt && c.nextRetryAt > now) continue;
 
-    let paid = await debitWalletForContribution(c.user as mongoose.Types.ObjectId, c.amount, {
-      groupAjo: group._id.toString(),
-      cycle: group.currentRound,
-      stage: "grace_wallet_retry",
-    });
+    let paid = await debitWalletForContribution(
+      c.user as mongoose.Types.ObjectId,
+      c.amount,
+      {
+        groupAjo: group._id.toString(),
+        cycle: group.currentRound,
+        stage: "grace_wallet_retry",
+      },
+      autoDebitIdempotencyKey("wallet", toObjectId(group._id), group.currentRound, c.user as mongoose.Types.ObjectId)
+    );
     let usedFallback = false;
 
     if (!paid) {
-      paid = await tryCardAutoDebit(c.user as mongoose.Types.ObjectId, c.amount, {
-        groupAjo: group._id.toString(),
-        cycle: group.currentRound,
-        stage: "grace_card_fallback",
-      });
+      paid = await tryCardAutoDebit(
+        c.user as mongoose.Types.ObjectId,
+        c.amount,
+        {
+          groupAjo: group._id.toString(),
+          cycle: group.currentRound,
+          stage: "grace_card_fallback",
+        },
+        autoDebitIdempotencyKey("card", toObjectId(group._id), group.currentRound, c.user as mongoose.Types.ObjectId)
+      );
       usedFallback = paid;
     }
 

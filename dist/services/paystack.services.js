@@ -52,14 +52,14 @@ const createTransferRecipient = (name, accountNumber, bankCode) => __awaiter(voi
     return data.data.recipient_code;
 });
 exports.createTransferRecipient = createTransferRecipient;
-const transferFunds = (recipientCode_1, amount_1, ...args_1) => __awaiter(void 0, [recipientCode_1, amount_1, ...args_1], void 0, function* (recipientCode, amount, reason = "Payout") {
+const transferFunds = (recipientCode_1, amount_1, ...args_1) => __awaiter(void 0, [recipientCode_1, amount_1, ...args_1], void 0, function* (recipientCode, amount, reason = "Payout", idempotencyKey) {
     const paystack = (0, paystack_1.getPaystack)();
     const { data } = yield paystack.post("/transfer", {
         source: "balance",
         amount: amount * 100,
         recipient: recipientCode,
         reason,
-    });
+    }, idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined);
     return data;
 });
 exports.transferFunds = transferFunds;
