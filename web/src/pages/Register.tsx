@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { register } from "../api/auth.api";
 import { useAuthStore } from "../store/authStore";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
+import { UserPlus } from "lucide-react";
 
 const registerSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -63,94 +64,115 @@ export default function Register() {
   const s = strength(pwd);
 
   return (
-    <div className="mx-auto max-w-md">
-      <div className="rounded-2xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Create your account</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Join groups, contribute safely, and receive payouts.
-        </p>
+    <div className="min-h-[calc(100vh-120px)] flex flex-col items-center justify-center px-4">
+      {/* Background Ambient Glow */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#ab73ff]/10 blur-[100px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[#40e56c]/5 blur-[80px] rounded-full pointer-events-none"></div>
 
-        <form
-          className="mt-5 space-y-4"
-          onSubmit={form.handleSubmit((values) => mut.mutate(values))}
-        >
-          {(
-            [
-              ["name", "Full name", "text"],
-              ["email", "Email", "email"],
-              ["phone", "Phone", "tel"],
-              ["username", "Username", "text"],
-            ] as const
-          ).map(([key, label, type]) => (
-            <div key={key} className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</label>
+      <div className="relative z-10 mx-auto max-w-md w-full">
+        {/* Logo Context */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-linear-to-br from-[#d6baff] to-[#ab73ff] shadow-lg mb-4">
+            <UserPlus size={28} className="text-[#111417]" />
+          </div>
+          <h1 className="font-headline text-4xl font-extrabold text-[#d6baff] tracking-tight">
+            Join Now
+          </h1>
+          <p className="mt-2 text-[#cdc2d7] text-sm">
+            Create your account and start contributing.
+          </p>
+        </div>
+
+        {/* Register Card */}
+        <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-8 shadow-2xl">
+          <form className="space-y-5" onSubmit={form.handleSubmit((values) => mut.mutate(values))}>
+            {(
+              [
+                ["name", "Full Name", "text"],
+                ["email", "Email Address", "email"],
+                ["phone", "Phone Number", "tel"],
+                ["username", "Username", "text"],
+              ] as const
+            ).map(([key, label, type]) => (
+              <div key={key} className="space-y-2">
+                <label className="text-xs uppercase tracking-wider font-bold text-[#cdc2d7] ml-1">
+                  {label}
+                </label>
+                <input
+                  type={type}
+                  className="w-full bg-[#323538] border border-[#4b4454]/30 rounded-lg py-3 px-4 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
+                  {...form.register(key)}
+                />
+                {form.formState.errors[key] ? (
+                  <div className="text-xs text-[#ffb4ab] font-semibold">
+                    {String(form.formState.errors[key]?.message)}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wider font-bold text-[#cdc2d7] ml-1">
+                Password
+              </label>
               <input
-                type={type}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                {...form.register(key)}
+                type="password"
+                className="w-full bg-[#323538] border border-[#4b4454]/30 rounded-lg py-3 px-4 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
+                {...form.register("password")}
+                onChange={(e) => {
+                  setPwd(e.target.value);
+                  form.setValue("password", e.target.value, { shouldValidate: true });
+                }}
               />
-              {form.formState.errors[key] ? (
-                <div className="text-xs text-rose-600">
-                  {String(form.formState.errors[key]?.message)}
+              {form.formState.errors.password ? (
+                <div className="text-xs text-[#ffb4ab] font-semibold">
+                  {String(form.formState.errors.password.message)}
                 </div>
               ) : null}
-            </div>
-          ))}
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-              {...form.register("password")}
-              onChange={(e) => {
-                setPwd(e.target.value);
-                form.setValue("password", e.target.value, { shouldValidate: true });
-              }}
-            />
-            {form.formState.errors.password ? (
-              <div className="text-xs text-rose-600">{String(form.formState.errors.password.message)}</div>
+              <div className="pt-2">
+                <div className="flex gap-1.5">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={[
+                        "h-2 flex-1 rounded-full transition-colors",
+                        i < s ? "bg-[#40e56c]" : "bg-[#4b4454]/40",
+                      ].join(" ")}
+                    />
+                  ))}
+                </div>
+                <div className="mt-1.5 text-xs text-[#968da0] font-semibold">
+                  Password strength: {["Weak", "Fair", "Good", "Strong"][s] || "Very Weak"}
+                </div>
+              </div>
+            </div>
+
+            {mut.isError ? (
+              <div className="rounded-lg bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] font-semibold border border-[#ffb4ab]/20">
+                {getAxiosErrorMessage(mut.error)}
+              </div>
             ) : null}
 
-            <div className="pt-1">
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className={[
-                      "h-2 flex-1 rounded-full",
-                      i < s ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-800",
-                    ].join(" ")}
-                  />
-                ))}
-              </div>
-              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Strength: {s}/4
-              </div>
-            </div>
+            <button
+              type="submit"
+              disabled={mut.isPending}
+              className="w-full bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-headline font-bold text-lg py-4 rounded-lg shadow-[0_8px_24px_rgba(64,229,108,0.25)] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 mt-2"
+            >
+              {mut.isPending ? "Creating account..." : "Create Account"}
+            </button>
+          </form>
+
+          {/* Already have account */}
+          <div className="mt-6 text-center">
+            <p className="text-[#cdc2d7] text-sm">
+              Already a member?{" "}
+              <Link to="/login" className="text-[#40e56c] font-bold hover:underline">
+                Sign In
+              </Link>
+            </p>
           </div>
-
-          {mut.isError ? (
-            <div className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
-              {getAxiosErrorMessage(mut.error)}
-            </div>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={mut.isPending}
-            className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
-          >
-            {mut.isPending ? "Creating..." : "Create account"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-slate-600 dark:text-slate-300">
-          Already have an account?{" "}
-          <Link to="/login" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Login
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );

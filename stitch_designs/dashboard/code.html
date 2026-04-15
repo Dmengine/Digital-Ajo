@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#280056",
+                        "surface-dim": "#111417",
+                        "on-surface-variant": "#cdc2d7",
+                        "primary-container": "#ab73ff",
+                        "on-secondary": "#003912",
+                        "secondary": "#40e56c",
+                        "secondary-fixed": "#69ff87",
+                        "error-container": "#93000a",
+                        "surface-container": "#1d2023",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#e1e2e7",
+                        "tertiary-container": "#89929c",
+                        "surface-container-highest": "#323538",
+                        "on-primary-fixed-variant": "#6000bf",
+                        "surface-container-lowest": "#0b0e11",
+                        "primary-fixed": "#ecdcff",
+                        "surface-container-high": "#272a2e",
+                        "on-primary": "#430089",
+                        "surface": "#111417",
+                        "inverse-surface": "#e1e2e7",
+                        "outline-variant": "#4b4454",
+                        "on-secondary-container": "#004d1b",
+                        "on-secondary-fixed": "#002108",
+                        "surface-container-low": "#191c1f",
+                        "on-tertiary-container": "#222b33",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "tertiary": "#bec7d2",
+                        "primary": "#d6baff",
+                        "outline": "#968da0",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#d6baff",
+                        "inverse-on-surface": "#2e3134",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed": "#141c24",
+                        "background": "#111417",
+                        "on-background": "#e1e2e7",
+                        "surface-tint": "#d6baff",
+                        "on-tertiary-fixed-variant": "#3f4850",
+                        "secondary-container": "#02c953",
+                        "on-primary-container": "#3a0078",
+                        "tertiary-fixed": "#dae3ee",
+                        "surface-bright": "#37393d",
+                        "surface-variant": "#323538",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "on-tertiary": "#29313a",
+                        "tertiary-fixed-dim": "#bec7d2",
+                        "inverse-primary": "#7a2fda"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl bg-gradient-to-b from-[#111417] to-transparent shadow-[0_16px_32px_rgba(75,68,84,0.08)]">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border-2 border-primary/20">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional individual with soft studio lighting and a clean dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG5pBP7_OoNhZlzOnB1HRFIvWa-rz4mf_xBoqcB71zGkYfBeSeyAxeWPEUCcba6IZBRMUwcl_3UAHky5daPaMOY1AlM53wc4OPmwQhpIFCUiVbIvqBRW4yt_rYlVj3nBp_rwP3iP9FMT8w7clFga9VYDty3QmZ2FyroG5YLDA8P8lv1VV7U8LBt_PTx9T9z34hv-xKb5VdTW6HR2UxTmqJnldvhfVCPwZ9uw83HfT_kGQwdlZpEXIW80bNUw-dFuHgm6y4tvKqMa-J"/>
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface-variant text-[10px] font-medium tracking-[0.1em] uppercase">The Sovereign Vault</span>
+<h1 class="text-[#D6BAFF] font-['Manrope'] font-bold text-xl tracking-tight leading-none">Good Morning, Alex</h1>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#D6BAFF] hover:opacity-80 transition-opacity active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="notifications">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-lg mx-auto space-y-8">
+<!-- Wallet Canvas -->
+<section class="relative">
+<!-- Glow Effect -->
+<div class="absolute -top-12 -left-12 w-48 h-48 bg-primary-container/10 blur-[60px] rounded-full"></div>
+<div class="relative bg-surface-container rounded-lg p-8 shadow-[0_16px_32px_rgba(0,0,0,0.3)] overflow-hidden">
+<div class="flex justify-between items-start mb-6">
+<div class="space-y-1">
+<p class="text-on-surface-variant font-label text-[10px] tracking-widest uppercase">Available Sovereignty</p>
+<h2 class="font-headline font-extrabold text-5xl tracking-tighter text-on-surface">$42,850<span class="text-primary text-2xl align-top">.00</span></h2>
+</div>
+<!-- KYC Chip -->
+<div class="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-primary tracking-wide uppercase">Tier 1 Verified</span>
+</div>
+</div>
+<div class="flex gap-3 mt-8">
+<button class="flex-1 bg-gradient-to-br from-secondary to-on-secondary-container h-14 rounded-xl flex items-center justify-center gap-2 text-on-secondary font-bold active:scale-95 transition-transform shadow-[0_8px_20px_rgba(64,229,108,0.2)]">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                        Deposit
+                    </button>
+<button class="flex-1 border border-outline/30 h-14 rounded-xl flex items-center justify-center gap-2 text-primary font-bold active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="outbox">outbox</span>
+                        Withdraw
+                    </button>
+</div>
+</div>
+</section>
+<!-- Quick Actions Bento -->
+<section>
+<div class="grid grid-cols-4 gap-4">
+<button class="flex flex-col items-center gap-3 active:scale-90 transition-transform">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-2xl" data-icon="group_add">group_add</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider text-center">Join Group</span>
+</button>
+<button class="flex flex-col items-center gap-3 active:scale-90 transition-transform">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl" data-icon="fact_check">fact_check</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider text-center">Verify Deposit</span>
+</button>
+<button class="flex flex-col items-center gap-3 active:scale-90 transition-transform">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl" data-icon="send">send</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider text-center">Send Money</span>
+</button>
+<button class="flex flex-col items-center gap-3 active:scale-90 transition-transform">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl" data-icon="analytics">analytics</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider text-center">Activity</span>
+</button>
+</div>
+</section>
+<!-- Active Circles / Community Progress -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<h3 class="font-headline font-bold text-xl text-on-surface">Active Circles</h3>
+<span class="text-secondary text-xs font-bold uppercase tracking-widest">2 Goals Near Completion</span>
+</div>
+<div class="bg-surface-container-low p-6 rounded-lg space-y-5">
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<img alt="Member" class="w-6 h-6 rounded-full border-2 border-surface-container-low" data-alt="Close up avatar of a smiling man in high resolution" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzIAQno23TOrYihdoLF3JEbWq3ZZbn1KgMO0teMN8bv8cFuBY585JJPLhZ0yWmB2uCJm47eVM7KUyg61Li3s621u37CDeN0RozGBrWGLJYuGj8pjLT5ek437W9y6YOWMn5XNlqrv3JcUn7m6VwlF5kbGxMkir1_CbRfbBgL4FWxt6NXCxnqnnMu46jThs3sMQHRPrm-A4SbHFC2BHwXiV-KFqIBmEYv3Z4t-OG9BZKZ28ueXzEoOyV-BnftVHLpOSM80_VZbsLLhqF"/>
+<img alt="Member" class="w-6 h-6 rounded-full border-2 border-surface-container-low" data-alt="Close up avatar of a smiling woman in high resolution" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfx9lsdrqq5BvWKJt_AAo5EfM040aJIYdv8Og8WnV6XfL18IZsyFkXc3hBy1TRT499BoHtamE07gsW2p7ZBbcWJ70KsDSrn1gEqWOCvdUWAqOz5dwYbrT0uragC0uIqC2r6nTYdUZkaJsdV-IGbYiAutG8fv8Zx9PJ2Pj9d211s-_NgqAHrT94Q16tfcmc3_F0iST7_E0qVM-x-eJwbWzxz4ZSgPFG2AmZxds8wepY12pXvFQH1OpXvAUwdgeFVzZPQTp4ZM5unO1k"/>
+<div class="w-6 h-6 rounded-full border-2 border-surface-container-low bg-surface-container-highest flex items-center justify-center text-[8px] font-bold">+8</div>
+</div>
+<span class="font-headline font-bold text-sm">Property Venture #4</span>
+</div>
+<span class="font-headline font-bold text-secondary text-sm">$850.00 <span class="text-on-surface-variant/50 text-[10px]">contributed</span></span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[78%] shadow-[0_0_8px_rgba(64,229,108,0.4)]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Activity -->
+<section class="space-y-6">
+<h3 class="font-headline font-bold text-xl text-on-surface">Recent Activity</h3>
+<div class="space-y-3">
+<!-- Transaction Item -->
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-sm">Circle Dividend</span>
+<span class="text-xs text-on-surface-variant">Tech Growth Fund • 14:20</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline font-bold text-secondary">+$1,240.00</span>
+<span class="text-[10px] text-secondary/60 font-bold uppercase tracking-tighter">Settled</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-sm">Monthly Contribution</span>
+<span class="text-xs text-on-surface-variant">Holiday Savings • Yesterday</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline font-bold text-on-surface">-$250.00</span>
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-tighter">Pending</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-sm">Sent to Sarah J.</span>
+<span class="text-xs text-on-surface-variant">Wallet Transfer • Oct 12</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline font-bold text-on-surface">-$50.00</span>
+<span class="text-[10px] text-secondary font-bold uppercase tracking-tighter">Completed</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 pb-safe bg-[#1D2023]/90 backdrop-blur-2xl border-t border-[#4B4454]/20 shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
+<div class="flex justify-around items-center px-4 py-3 w-full">
+<!-- Active Tab: Vault -->
+<a class="flex flex-col items-center justify-center text-[#D6BAFF] bg-[#D6BAFF]/10 rounded-full px-5 py-2 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Vault</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#968DA0] px-5 py-2 hover:text-[#D6BAFF]/80 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="group_work">group_work</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Circles</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#968DA0] px-5 py-2 hover:text-[#D6BAFF]/80 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#968DA0] px-5 py-2 hover:text-[#D6BAFF]/80 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person_4">person_4</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide uppercase mt-0.5">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

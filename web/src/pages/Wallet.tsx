@@ -7,6 +7,7 @@ import { initDeposit, verifyDeposit, withdraw } from "../api/wallet.api";
 import { me as fetchMe } from "../api/auth.api";
 import { useAuthStore } from "../store/authStore";
 import { formatNaira } from "../utils/currency";
+import { Plus, CreditCard, TrendingUp } from "lucide-react";
 
 const amountSchema = z.number().positive().max(10_000_000);
 export default function Wallet() {
@@ -70,26 +71,29 @@ export default function Wallet() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-8">
+      {/* Wallet Balance Header */}
+      <section className="relative rounded-lg border border-[#d6baff]/20 bg-linear-to-br from-[#d6baff]/10 via-[#ab73ff]/5 to-[#111417] p-8 shadow-lg overflow-hidden">
+        <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#ab73ff]/10 blur-[60px] rounded-full"></div>
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm text-slate-600 dark:text-slate-300">Main Wallet</div>
-            <div className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">
+            <p className="text-xs uppercase tracking-[0.2em] text-[#cdc2d7] font-semibold">Total Vault Balance</p>
+            <h2 className="mt-3 font-headline text-5xl font-extrabold text-[#d6baff] tracking-tight">
               ₦{formatNaira(walletBalance)}
-            </div>
-            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {isFetching ? "Refreshing wallet balance..." : "Balance updates after successful deposit webhooks."}
-            </div>
+            </h2>
+            <p className="mt-2 text-[#cdc2d7] text-sm">
+              {isFetching ? "Refreshing..." : "Balance updates after successful deposits"}
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={() => {
                 setDepositOpen(true);
                 resetAmount();
               }}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-bold hover:opacity-90 transition-opacity shadow-[0_8px_24px_rgba(64,229,108,0.25)]"
             >
+              <Plus size={18} />
               Deposit
             </button>
             <button
@@ -97,44 +101,70 @@ export default function Wallet() {
                 setWithdrawOpen(true);
                 resetWithdrawState();
               }}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[#4b4454]/30 text-[#d6baff] font-bold hover:bg-[#4b4454]/10 transition-colors"
             >
+              <TrendingUp size={18} />
               Withdraw
             </button>
           </div>
         </div>
+      </section>
+
+      {/* Quick Stats */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-[#cdc2d7] font-semibold">Recent Activity</p>
+              <p className="mt-2 text-[#968da0] text-sm">Transaction history coming soon</p>
+            </div>
+            <div className="rounded-lg bg-[#40e56c]/10 p-3 text-[#40e56c]">
+              <CreditCard size={20} />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-[#cdc2d7] font-semibold">Paystack Integration</p>
+              <p className="mt-2 text-[#968da0] text-sm">Secure deposits via Paystack checkout</p>
+            </div>
+            <div className="rounded-lg bg-[#d6baff]/10 p-3 text-[#d6baff]">
+              <CreditCard size={20} />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Deposit modal */}
+      {/* Deposit Modal */}
       {depositOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white p-5 shadow-lg dark:border-white/10 dark:bg-slate-950">
-            <div className="flex items-start justify-between gap-3">
+          <div className="w-full max-w-sm rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-8 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 mb-6">
               <div>
-                <div className="text-lg font-semibold text-slate-950 dark:text-white">Deposit</div>
-                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Paystack will charge your bank/card.
-                </div>
+                <h3 className="font-headline text-2xl font-bold text-[#d6baff]">Deposit Funds</h3>
+                <p className="mt-1 text-[#cdc2d7] text-sm">Paystack will handle the payment securely.</p>
               </div>
               <button
                 onClick={() => setDepositOpen(false)}
-                className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-lg p-2 text-[#cdc2d7] hover:bg-[#4b4454]/20 transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-4">
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 inputMode="numeric"
                 placeholder="Amount (₦)"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full bg-[#323538] border border-[#4b4454]/30 rounded-lg py-3 px-4 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               />
 
               {depositMut.isError ? (
-                <div className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+                <div className="rounded-lg bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] border border-[#ffb4ab]/20 font-semibold">
                   {getAxiosErrorMessage(depositMut.error)}
                 </div>
               ) : null}
@@ -149,43 +179,43 @@ export default function Wallet() {
                   resetAmount();
                   void pollDepositSettlement(res.reference);
                 }}
-                className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                className="w-full bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-bold py-3 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {depositMut.isPending ? "Processing..." : "Deposit"}
+                {depositMut.isPending ? "Processing..." : "Proceed to Paystack"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* Withdraw modal */}
+      {/* Withdraw Modal */}
       {withdrawOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white p-5 shadow-lg dark:border-white/10 dark:bg-slate-950">
-            <div className="flex items-start justify-between gap-3">
+          <div className="w-full max-w-sm rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-8 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 mb-6">
               <div>
-                <div className="text-lg font-semibold text-slate-950 dark:text-white">Withdraw</div>
-                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">Send funds to your linked bank.</div>
+                <h3 className="font-headline text-2xl font-bold text-[#d6baff]">Withdraw</h3>
+                <p className="mt-1 text-[#cdc2d7] text-sm">Transfer to your linked bank account.</p>
               </div>
               <button
                 onClick={() => setWithdrawOpen(false)}
-                className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-lg p-2 text-[#cdc2d7] hover:bg-[#4b4454]/20 transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-4">
               <input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 inputMode="numeric"
                 placeholder="Amount (₦)"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full bg-[#323538] border border-[#4b4454]/30 rounded-lg py-3 px-4 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               />
 
               {withdrawMut.isError ? (
-                <div className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+                <div className="rounded-lg bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] border border-[#ffb4ab]/20 font-semibold">
                   {getAxiosErrorMessage(withdrawMut.error)}
                 </div>
               ) : null}
@@ -199,25 +229,18 @@ export default function Wallet() {
                   resetWithdrawState();
                   void refetch();
                 }}
-                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+                className="w-full bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-bold py-3 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
               >
-                {withdrawMut.isPending ? "Withdrawing..." : "Confirm withdraw"}
+                {withdrawMut.isPending ? "Processing..." : "Confirm Withdrawal"}
               </button>
 
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Ensure your bank account details are linked before withdrawing.
-              </div>
+              <p className="text-xs text-[#968da0] mt-3 font-semibold">
+                Ensure your bank details are verified before withdrawing.
+              </p>
             </div>
           </div>
         </div>
       ) : null}
-
-      <div className="rounded-2xl border border-white/10 bg-white/70 p-5 shadow-sm dark:bg-slate-900/40">
-        <div className="text-sm font-semibold text-slate-900 dark:text-white">Transaction history</div>
-        <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Not available yet (backend does not expose transaction history endpoints in this MVP).
-        </div>
-      </div>
     </div>
   );
 }

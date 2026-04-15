@@ -19,13 +19,13 @@ import { useEffect, useRef, useState } from "react";
 function tone(groupType: GroupType) {
   switch (groupType) {
     case "low":
-      return "bg-blue-500/10 text-blue-700 dark:text-blue-300";
+      return "bg-blue-500/20 text-blue-300 border border-blue-500/40";
     case "medium":
-      return "bg-amber-500/10 text-amber-700 dark:text-amber-300";
+      return "bg-amber-500/20 text-amber-300 border border-amber-500/40";
     case "high":
-      return "bg-orange-500/10 text-orange-700 dark:text-orange-300";
+      return "bg-orange-500/20 text-orange-300 border border-orange-500/40";
     case "premium":
-      return "bg-purple-500/10 text-purple-700 dark:text-purple-300";
+      return "bg-purple-500/20 text-purple-300 border border-purple-500/40";
   }
 }
 
@@ -196,103 +196,106 @@ export default function GroupDetail() {
   return (
     <div className="space-y-4">
       {isLoading ? (
-        <div className="rounded-2xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
+        <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6 text-[#cdc2d7]">
           Loading group...
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-6 text-sm text-rose-700 dark:text-rose-300">
+        <div className="rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 p-6 text-sm text-[#ffb4ab]">
           {getAxiosErrorMessage(error)}
         </div>
       ) : null}
 
       {group ? (
         <Tabs.Root defaultValue="dashboard" className="space-y-4">
-          <div className="rounded-3xl border border-white/10 bg-white/70 p-4 shadow-sm dark:bg-slate-900/40">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">{group.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <div className={["rounded-xl px-3 py-1 text-xs font-semibold", tone(group.groupType)].join(" ")}>
-                    {String(group.groupType).toUpperCase()}
-                  </div>
-                  <div className="rounded-xl bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-950/40 dark:text-slate-200">
-                    Status: {group.status}
-                  </div>
-                  {dashQ.data?.group?.roundStatus ? (
-                    <div className="rounded-xl bg-white/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-950/40 dark:text-slate-200">
-                      Round: {dashQ.data.group.roundStatus}
+          <div className="relative">
+            <div className="absolute -inset-1 bg-linear-to-r from-[#d6baff]/20 to-[#40e56c]/10 blur-2xl opacity-50 pointer-events-none"></div>
+            <div className="relative rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h1 className="font-headline text-3xl font-extrabold text-[#d6baff] tracking-tight">{group.name}</h1>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <div className={["rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-wider", tone(group.groupType)].join(" ")}>
+                      {String(group.groupType).toUpperCase()}
                     </div>
-                  ) : null}
+                    <div className="rounded-lg bg-[#323538] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#e1e2e7]">
+                      Status: {group.status}
+                    </div>
+                    {dashQ.data?.group?.roundStatus ? (
+                      <div className="rounded-lg bg-[#323538] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#e1e2e7]">
+                        Round: {dashQ.data.group.roundStatus}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-linear-to-br from-[#d6baff]/20 to-[#40e56c]/10 border border-[#d6baff]/20 p-4">
+                  <div className="text-xs uppercase tracking-wider text-[#968da0] font-bold">Contribution</div>
+                  <div className="mt-2 font-headline text-2xl font-bold text-[#d6baff]">₦{group.contributionAmount}</div>
+                  <div className="mt-1 text-xs text-[#968da0]">Frequency: {group.frequency}</div>
                 </div>
               </div>
-              <div className="rounded-2xl bg-linear-to-br from-indigo-500/15 to-emerald-500/10 p-4">
-                <div className="text-xs text-slate-600 dark:text-slate-300">Contribution</div>
-                <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-white">₦{group.contributionAmount}</div>
-                <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">Frequency: {group.frequency}</div>
-              </div>
-            </div>
 
-            <Tabs.List className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
-              {(["dashboard", "chat", "about"] as const).map((tab) => (
-                <Tabs.Trigger
-                  key={tab}
-                  value={tab}
-                  className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 data-[state=active]:bg-indigo-600 data-[state=active]:text-white dark:text-slate-300 dark:data-[state=active]:bg-indigo-500"
-                >
-                  {tab === "dashboard" ? "Dashboard" : tab === "chat" ? "Chat" : "About"}
-                </Tabs.Trigger>
-              ))}
-            </Tabs.List>
+              <Tabs.List className="mt-6 flex flex-wrap gap-2 border-t border-[#4b4454]/30 pt-4">
+                {(["dashboard", "chat", "about"] as const).map((tab) => (
+                  <Tabs.Trigger
+                    key={tab}
+                    value={tab}
+                    className="rounded-lg px-4 py-2 text-sm font-bold text-[#968da0] data-[state=active]:bg-[#d6baff] data-[state=active]:text-[#111417] transition-all"
+                  >
+                    {tab === "dashboard" ? "Dashboard" : tab === "chat" ? "Chat" : "About"}
+                  </Tabs.Trigger>
+                ))}
+              </Tabs.List>
+            </div>
           </div>
 
           <Tabs.Content value="dashboard" className="space-y-4 outline-none">
             {dashQ.isLoading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/70 p-6 dark:bg-slate-900/40">Loading dashboard...</div>
+              <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6 text-[#cdc2d7]">Loading dashboard...</div>
             ) : null}
             {dashQ.error ? (
-              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-300">
+              <div className="rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 p-4 text-sm text-[#ffb4ab]">
                 {getAxiosErrorMessage(dashQ.error)}
               </div>
             ) : null}
 
             {dashQ.data ? (
               <>
-                <div className="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Member overview</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+                  <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Member Overview</h2>
+                  <p className="mt-2 text-sm text-[#968da0]">
                     Round {dashQ.data.group.currentRound} · Totals from recorded contributions in this group.
                   </p>
                   {dashQ.data.group.roundStatus === "paused" ? (
-                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                    <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                       This round is paused because at least one contribution is unresolved.
                       {dashQ.data.group.roundGraceEndsAt
                         ? ` Grace period ends ${new Date(dashQ.data.group.roundGraceEndsAt).toLocaleString()}.`
                         : ""}
                     </div>
                   ) : null}
-                  <div className="mt-4 overflow-x-auto">
+                  <div className="mt-6 overflow-x-auto">
                     <table className="w-full min-w-160 text-left text-sm">
                       <thead>
-                        <tr className="border-b border-white/10 text-xs text-slate-500 dark:text-slate-400">
-                          <th className="py-2 pr-3 font-medium">Member</th>
-                          <th className="py-2 pr-3 font-medium">Order</th>
-                          <th className="py-2 pr-3 font-medium">Paid in</th>
-                          <th className="py-2 pr-3 font-medium">Completed</th>
-                          <th className="py-2 pr-3 font-medium">Pending</th>
-                          <th className="py-2 pr-3 font-medium">Failed</th>
-                          <th className="py-2 pr-3 font-medium">Unpaid</th>
-                          <th className="py-2 pr-3 font-medium">Defaulted</th>
-                          <th className="py-2 font-medium">Payout</th>
+                        <tr className="border-b border-[#4b4454]/30 text-xs font-bold uppercase text-[#968da0] tracking-wider">
+                          <th className="py-3 pr-3">Member</th>
+                          <th className="py-3 pr-3">Order</th>
+                          <th className="py-3 pr-3">Paid in</th>
+                          <th className="py-3 pr-3">Completed</th>
+                          <th className="py-3 pr-3">Pending</th>
+                          <th className="py-3 pr-3">Failed</th>
+                          <th className="py-3 pr-3">Unpaid</th>
+                          <th className="py-3 pr-3">Defaulted</th>
+                          <th className="py-3">Payout</th>
                         </tr>
                       </thead>
                       <tbody>
                         {dashQ.data.members.map((m) => (
-                          <tr key={m.userId} className="border-b border-white/5 text-slate-800 dark:text-slate-200">
+                          <tr key={m.userId} className="border-b border-[#4b4454]/10 text-[#e1e2e7] hover:bg-[#323538]/30">
                             <td className="py-3 pr-3">
-                              <div className="font-semibold">{m.name ?? "—"}</div>
-                              <div className="text-xs text-slate-500">@{m.username ?? "—"}</div>
+                              <div className="font-bold text-[#e1e2e7]">{m.name ?? "—"}</div>
+                              <div className="text-xs text-[#968da0]">@{m.username ?? "—"}</div>
                             </td>
                             <td className="py-3 pr-3">#{m.order}</td>
                             <td className="py-3 pr-3">₦{m.totalPaid.toLocaleString()}</td>
@@ -303,11 +306,11 @@ export default function GroupDetail() {
                             <td className="py-3 pr-3">{m.defaultedContributions}</td>
                             <td className="py-3">
                               {m.hasReceived ? (
-                                <span className="rounded-lg bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                <span className="rounded-lg bg-[#40e56c]/20 px-2 py-1 text-xs font-bold text-[#40e56c] uppercase tracking-wide">
                                   Received
                                 </span>
                               ) : (
-                                <span className="rounded-lg bg-slate-500/10 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                <span className="rounded-lg bg-[#968da0]/20 px-2 py-1 text-xs font-bold text-[#968da0] uppercase tracking-wide">
                                   Pending
                                 </span>
                               )}
@@ -319,13 +322,13 @@ export default function GroupDetail() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6 dark:bg-amber-500/10">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Defaulters</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6">
+                  <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Defaulters</h2>
+                  <p className="mt-2 text-sm text-[#968da0]">
                     Members with failed, unpaid, or defaulted contribution records in this group.
                   </p>
                   {dashQ.data.defaulters.length === 0 ? (
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/60 p-4 text-sm text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
+                    <div className="mt-4 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4 text-sm text-[#968da0]">
                       No defaulters recorded yet.
                     </div>
                   ) : (
@@ -333,11 +336,11 @@ export default function GroupDetail() {
                       {dashQ.data.defaulters.map((d) => (
                         <li
                           key={d.userId}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-500/20 bg-white/70 px-4 py-3 dark:bg-slate-900/50"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3"
                         >
                           <div>
-                            <div className="font-semibold text-slate-900 dark:text-white">{d.name ?? "Member"}</div>
-                            <div className="text-xs text-slate-500">
+                            <div className="font-bold text-[#e1e2e7]">{d.name ?? "Member"}</div>
+                            <div className="text-xs text-[#968da0]">
                               @{d.username ?? "—"} · failed: {d.failedContributions} · unpaid: {d.unpaidContributions} · defaulted: {d.defaultedContributions}
                             </div>
                           </div>
@@ -348,40 +351,40 @@ export default function GroupDetail() {
                 </div>
 
                 {isAdmin ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Manage members</h2>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Add a user by their username (they must meet group KYC rules).</p>
+                  <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+                    <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Manage Members</h2>
+                    <p className="mt-2 text-sm text-[#968da0]">Add a user by their username (they must meet group KYC rules).</p>
 
                     {shareLink ? (
-                      <div className="mt-4 rounded-2xl border border-white/10 bg-white/60 p-4 dark:bg-slate-950/40">
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">Invite people to this group</div>
-                        <div className="mt-1 break-all text-xs text-slate-600 dark:text-slate-300">{shareLink}</div>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-6 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4">
+                        <div className="text-sm font-bold text-[#e1e2e7]">Invite People to This Group</div>
+                        <div className="mt-2 break-all font-mono text-xs text-[#968da0]">{shareLink}</div>
+                        <div className="mt-4 flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={shareInvite}
-                            className="rounded-xl bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+                            className="rounded-lg bg-[#40e56c] px-4 py-2 text-xs font-bold text-[#003912] uppercase tracking-wide hover:opacity-90 transition-all"
                           >
-                            Share invite link
+                            Share Invite Link
                           </button>
                           <button
                             type="button"
                             onClick={() => {
                               void copy(shareLink);
                             }}
-                            className="rounded-xl bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+                            className="rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-4 py-2 text-xs font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 transition-all"
                           >
-                            Copy invite link
+                            Copy Invite Link
                           </button>
                         </div>
                         {inviteNotice ? (
-                          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">{inviteNotice}</div>
+                          <div className="mt-3 text-xs text-[#968da0]">{inviteNotice}</div>
                         ) : null}
                       </div>
                     ) : null}
 
                     <form
-                      className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end"
+                      className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end"
                       onSubmit={(e) => {
                         e.preventDefault();
                         const u = addUsername.trim().toLowerCase();
@@ -390,11 +393,11 @@ export default function GroupDetail() {
                       }}
                     >
                       <div className="flex-1">
-                        <label className="text-xs text-slate-500 dark:text-slate-400">Username</label>
+                        <label className="text-xs uppercase tracking-wider text-[#968da0] font-bold">Username</label>
                         <input
                           value={addUsername}
                           onChange={(e) => setAddUsername(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-white/10 bg-white px-3 py-2 text-sm dark:bg-slate-950/50"
+                          className="mt-2 w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-sm text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
                           placeholder="e.g. janedoe"
                           autoComplete="off"
                         />
@@ -402,27 +405,27 @@ export default function GroupDetail() {
                       <button
                         type="submit"
                         disabled={addMut.isPending || !addUsername.trim()}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                        className="rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-6 py-2 text-sm font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
                       >
-                        {addMut.isPending ? "Adding…" : "Add member"}
+                        {addMut.isPending ? "Adding…" : "Add Member"}
                       </button>
                     </form>
                     {addMut.isError ? (
-                      <div className="mt-2 text-sm text-rose-600 dark:text-rose-300">{getAxiosErrorMessage(addMut.error)}</div>
+                      <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(addMut.error)}</div>
                     ) : null}
 
                     <div className="mt-6 space-y-2">
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">Remove member</div>
+                      <div className="text-sm font-bold text-[#e1e2e7]">Remove Member</div>
                       {(group.members ?? []).map((m: { user?: { _id?: string; username?: string; name?: string }; order: number }) => {
                         const uid = m.user?._id ? String(m.user._id) : "";
                         const isCreator = uid && createdById && uid === createdById;
                         return (
                           <div
                             key={uid || m.order}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/60 px-3 py-2 dark:bg-slate-900/40"
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 px-4 py-3"
                           >
-                            <span className="text-sm">
-                              {m.user?.name ?? "Member"} <span className="text-slate-500">(@{m.user?.username ?? "—"})</span>
+                            <span className="text-sm text-[#e1e2e7]">
+                              {m.user?.name ?? "Member"} <span className="text-[#968da0]">(@{m.user?.username ?? "—"})</span>
                             </span>
                             {isAdmin && uid && !isCreator ? (
                               <button
@@ -433,19 +436,19 @@ export default function GroupDetail() {
                                     removeMut.mutate(uid);
                                   }
                                 }}
-                                className="rounded-lg bg-rose-600/90 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-500 disabled:opacity-50"
+                                className="rounded-lg bg-[#ffb4ab]/20 px-3 py-1 text-xs font-bold text-[#ffb4ab] uppercase tracking-wide hover:bg-[#ffb4ab]/30 transition-all disabled:opacity-60"
                               >
                                 Remove
                               </button>
                             ) : isCreator ? (
-                              <span className="text-xs font-medium text-slate-500">Admin</span>
+                              <span className="text-xs font-bold text-[#968da0] uppercase tracking-wide">Admin</span>
                             ) : null}
                           </div>
                         );
                       })}
                     </div>
                     {removeMut.isError ? (
-                      <div className="mt-2 text-sm text-rose-600 dark:text-rose-300">{getAxiosErrorMessage(removeMut.error)}</div>
+                      <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(removeMut.error)}</div>
                     ) : null}
                   </div>
                 ) : null}
@@ -454,24 +457,24 @@ export default function GroupDetail() {
           </Tabs.Content>
 
           <Tabs.Content value="chat" className="outline-none">
-            <div className="flex h-[min(520px,70vh)] flex-col rounded-3xl border border-white/10 bg-white/70 shadow-sm dark:bg-slate-900/40">
-              <div className="border-b border-white/10 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Group chat</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex h-[min(520px,70vh)] flex-col rounded-lg border border-[#4b4454]/30 bg-[#1d2023]">
+              <div className="border-b border-[#4b4454]/30 px-4 py-3">
+                <h2 className="text-sm font-bold text-[#e1e2e7] uppercase tracking-wide">Group Chat</h2>
+                <p className="text-xs text-[#968da0] mt-1">
                   Live updates via WebSocket. Visible to all members.
                   {wsConnected ? (
-                    <span className="ml-2 font-medium text-emerald-600 dark:text-emerald-400">Connected</span>
+                    <span className="ml-2 font-bold text-[#40e56c]">Connected</span>
                   ) : (
-                    <span className="ml-2 font-medium text-amber-600 dark:text-amber-400">Connecting…</span>
+                    <span className="ml-2 font-bold text-amber-400">Connecting…</span>
                   )}
                 </p>
               </div>
               <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-                {msgQ.isLoading ? <div className="text-sm text-slate-500">Loading history…</div> : null}
+                {msgQ.isLoading ? <div className="text-sm text-[#968da0]">Loading history…</div> : null}
                 {msgQ.error ? (
-                  <div className="text-sm text-rose-600 dark:text-rose-300">{getAxiosErrorMessage(msgQ.error)}</div>
+                  <div className="text-sm text-[#ffb4ab]">{getAxiosErrorMessage(msgQ.error)}</div>
                 ) : null}
-                {chatError ? <div className="text-sm text-rose-600 dark:text-rose-300">{chatError}</div> : null}
+                {chatError ? <div className="text-sm text-[#ffb4ab]">{chatError}</div> : null}
                 {chatMessages.map((msg) => {
                   const senderId = msg.sender?._id != null ? String(msg.sender._id) : "";
                   const mine = Boolean(me?._id && senderId && senderId === me._id);
@@ -479,22 +482,22 @@ export default function GroupDetail() {
                     <div key={msg._id} className={["flex", mine ? "justify-end" : "justify-start"].join(" ")}>
                       <div
                         className={[
-                          "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
+                          "max-w-[85%] rounded-lg px-4 py-2 text-sm",
                           mine
-                            ? "bg-indigo-600 text-white"
-                            : "border border-white/10 bg-white/80 text-slate-900 dark:bg-slate-950/60 dark:text-slate-100",
+                            ? "bg-linear-to-br from-[#d6baff] to-[#ab73ff] text-[#111417] font-bold"
+                            : "border border-[#4b4454]/30 bg-[#323538] text-[#e1e2e7]",
                         ].join(" ")}
                       >
                         {!mine ? (
-                          <div className="mb-1 text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+                          <div className="mb-2 text-xs font-bold text-[#d6baff] uppercase tracking-wide">
                             {msg.sender?.name ?? msg.sender?.username ?? "Member"}
                           </div>
                         ) : null}
                         <div className="whitespace-pre-wrap break-word">{msg.body}</div>
                         <div
                           className={[
-                            "mt-1 text-[10px] opacity-80",
-                            mine ? "text-indigo-100" : "text-slate-500 dark:text-slate-400",
+                            "mt-2 text-[10px] opacity-75",
+                            mine ? "text-[#111417]/80" : "text-[#968da0]",
                           ].join(" ")}
                         >
                           {new Date(msg.createdAt).toLocaleString()}
@@ -506,7 +509,7 @@ export default function GroupDetail() {
                 <div ref={chatEndRef} />
               </div>
               <form
-                className="border-t border-white/10 p-3"
+                className="border-t border-[#4b4454]/30 p-3"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const t = chatText.trim();
@@ -529,14 +532,14 @@ export default function GroupDetail() {
                   <input
                     value={chatText}
                     onChange={(e) => setChatText(e.target.value)}
-                    className="flex-1 rounded-xl border border-white/10 bg-white px-3 py-2 text-sm dark:bg-slate-950/50"
+                    className="flex-1 rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-sm text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
                     placeholder="Write a message…"
                     maxLength={2000}
                   />
                   <button
                     type="submit"
                     disabled={chatSending || !chatText.trim() || !wsConnected}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    className="rounded-lg bg-[#40e56c] px-6 py-2 text-sm font-bold text-[#003912] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
                   >
                     {chatSending ? "Sending…" : "Send"}
                   </button>
@@ -546,21 +549,21 @@ export default function GroupDetail() {
           </Tabs.Content>
 
           <Tabs.Content value="about" className="space-y-4 outline-none">
-            <div className="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
-              <div className="text-sm text-slate-600 dark:text-slate-300">{group.description || "No description."}</div>
+            <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+              <div className="text-sm text-[#e1e2e7]">{group.description || "No description."}</div>
 
-              <div className="mt-5 space-y-2">
-                <div className="rounded-xl bg-white/60 p-3 dark:bg-slate-950/40">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Invite code</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-sm font-semibold text-slate-950 dark:text-white">
+              <div className="mt-6 space-y-3">
+                <div className="rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4">
+                  <div className="text-xs uppercase tracking-wider text-[#968da0] font-bold">Invite Code</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <span className="font-mono text-sm font-bold text-[#d6baff]">
                       {group.inviteCode ?? "—"}
                     </span>
                     {group.inviteCode ? (
                       <button
                         type="button"
                         onClick={() => copy(String(group.inviteCode))}
-                        className="rounded-xl bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+                        className="rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-3 py-1 text-xs font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 transition-all"
                       >
                         Copy
                       </button>
@@ -569,44 +572,44 @@ export default function GroupDetail() {
                 </div>
 
                 {shareLink ? (
-                  <div className="rounded-xl bg-white/60 p-3 dark:bg-slate-950/40">
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Invite link</div>
-                    <div className="mt-1 break-all font-mono text-xs text-slate-700 dark:text-slate-200">{shareLink}</div>
+                  <div className="rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4">
+                    <div className="text-xs uppercase tracking-wider text-[#968da0] font-bold">Invite Link</div>
+                    <div className="mt-2 break-all font-mono text-xs text-[#cdc2d7]">{shareLink}</div>
                     <button
                       type="button"
                       onClick={() => copy(shareLink)}
-                      className="mt-2 rounded-xl bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+                      className="mt-3 rounded-lg bg-[#40e56c] px-3 py-1 text-xs font-bold text-[#003912] uppercase tracking-wide hover:opacity-90 transition-all"
                     >
-                      Copy link
+                      Copy Link
                     </button>
                   </div>
                 ) : null}
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-sm dark:bg-slate-900/40">
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">Members</div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+              <div className="text-sm font-bold text-[#e1e2e7] uppercase tracking-wide">Members</div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 {(group.members ?? []).map((m: any) => (
                   <div
                     key={m._id ?? m.user?._id ?? m.order}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/60 px-3 py-3 dark:bg-slate-900/40"
+                    className="flex items-center justify-between rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-indigo-500/10 pt-2 text-center text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                      <div className="h-9 w-9 rounded-full bg-[#d6baff]/20 flex items-center justify-center text-sm font-bold text-[#d6baff]">
                         {m.user?.username?.slice(0, 2).toUpperCase() ?? "??"}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{m.user?.name ?? "Member"}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">Order #{m.order}</div>
+                        <div className="text-sm font-bold text-[#e1e2e7]">{m.user?.name ?? "Member"}</div>
+                        <div className="text-xs text-[#968da0]">Order #{m.order}</div>
                       </div>
                     </div>
                     {m.hasReceived ? (
-                      <div className="rounded-xl bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                      <div className="rounded-lg bg-[#40e56c]/20 px-3 py-1 text-xs font-bold text-[#40e56c] uppercase tracking-wide">
                         Received
                       </div>
                     ) : (
-                      <div className="rounded-xl bg-slate-500/10 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <div className="rounded-lg bg-[#968da0]/20 px-3 py-1 text-xs font-bold text-[#968da0] uppercase tracking-wide">
                         Pending
                       </div>
                     )}

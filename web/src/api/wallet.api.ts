@@ -1,5 +1,12 @@
 import { api } from "./client";
 
+const createIdempotencyKey = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `wd-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 export async function initDeposit(amount: number): Promise<{
   success: boolean;
   paymentURL: string;
@@ -19,7 +26,12 @@ export async function verifyDeposit(reference: string): Promise<{
 }
 
 export async function withdraw(amount: number): Promise<{ success: boolean; message: string }> {
-  const { data } = await api.post("/wallet/withdraw", { amount });
+  const idempotencyKey = createIdempotencyKey();
+  const { data } = await api.post(
+    "/wallet/withdraw",
+    { amount, idempotencyKey },
+    { headers: { "x-idempotency-key": idempotencyKey } }
+  );
   return data;
 }
 

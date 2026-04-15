@@ -88,47 +88,50 @@ export default function CreateGroup() {
   const groupTypeOptions: Array<Values["groupType"]> = ["low", "medium"];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-linear-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
-        <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">Create Group</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          MVP: invite-only joining. You can create and share your invite code.
-        </p>
-        {isCheckingKyc ? (
-          <div className="mt-3 rounded-xl bg-slate-500/10 p-3 text-sm text-slate-600 dark:text-slate-300">
-            Checking your KYC status...
-          </div>
-        ) : !basicKycCompleted ? (
-          <div className="mt-3 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-300">
-            Complete Tier 1 KYC first to create groups.
-          </div>
-        ) : null}
+    <div className="space-y-6">
+      <div className="relative">
+        <div className="absolute -inset-1 bg-linear-to-r from-[#d6baff]/20 to-[#40e56c]/10 blur-2xl opacity-50 pointer-events-none"></div>
+        <div className="relative rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+          <h1 className="font-headline text-3xl font-extrabold text-[#d6baff] tracking-tight">Create Group</h1>
+          <p className="mt-2 text-sm text-[#968da0]">
+            MVP: invite-only joining. You can create and share your invite code.
+          </p>
+          {isCheckingKyc ? (
+            <div className="mt-4 rounded-lg bg-[#968da0]/20 px-4 py-3 text-sm text-[#968da0] font-bold uppercase tracking-wide">
+              Checking your KYC status...
+            </div>
+          ) : !basicKycCompleted ? (
+            <div className="mt-4 rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] font-bold">
+              Complete Tier 1 KYC first to create groups.
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {inviteToast ? (
-        <div className="rounded-2xl border border-white/10 bg-white/70 p-4 text-sm text-slate-700 shadow-sm dark:bg-slate-900/40">
+        <div className="rounded-lg border border-[#40e56c]/30 bg-[#40e56c]/10 p-4 text-sm text-[#40e56c] font-bold">
           {inviteToast}
         </div>
       ) : null}
 
       <form
-        className="rounded-2xl border border-white/10 bg-white/70 p-5 shadow-sm dark:bg-slate-900/40"
+        className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6"
         onSubmit={form.handleSubmit((v) => mut.mutate(v))}
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Group name</label>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Group Name</label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               {...form.register("name")}
             />
             {form.formState.errors.name ? (
-              <div className="text-xs text-rose-600">{form.formState.errors.name.message}</div>
+              <div className="text-xs text-[#ffb4ab] font-bold">{form.formState.errors.name.message}</div>
             ) : null}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Group type</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Group Type</label>
             <div className="flex flex-wrap gap-2">
               {groupTypeOptions.map((t) => (
                 <button
@@ -136,34 +139,34 @@ export default function CreateGroup() {
                   type="button"
                   onClick={() => form.setValue("groupType", t, { shouldValidate: true })}
                   className={[
-                    "rounded-xl border px-4 py-2 text-sm font-semibold transition",
+                    "rounded-lg border px-4 py-2 text-sm font-bold uppercase tracking-wide transition",
                     form.watch("groupType") === t
-                      ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
-                      : "border-white/10 bg-white/60 text-slate-700 hover:bg-white/80 dark:bg-slate-900/30 dark:text-slate-200",
+                      ? "border-[#d6baff]/40 bg-[#d6baff]/20 text-[#d6baff]"
+                      : "border-[#4b4454]/30 bg-[#323538] text-[#968da0] hover:bg-[#4b4454]/30",
                   ].join(" ")}
                 >
-                  {t.toUpperCase()}
+                  {t}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Contribution amount (₦)</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Contribution Amount (₦)</label>
             <input
               type="number"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               {...form.register("contributionAmount", { valueAsNumber: true })}
             />
             {form.formState.errors.contributionAmount ? (
-              <div className="text-xs text-rose-600">{form.formState.errors.contributionAmount.message}</div>
+              <div className="text-xs text-[#ffb4ab] font-bold">{form.formState.errors.contributionAmount.message}</div>
             ) : null}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Frequency</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Frequency</label>
             <select
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               {...form.register("frequency")}
             >
               <option value="daily">Daily</option>
@@ -172,50 +175,50 @@ export default function CreateGroup() {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Start date</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Start Date</label>
             <input
               type="date"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               {...form.register("startDate")}
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Members (optional)</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Members (Optional)</label>
             <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
               placeholder="comma-separated usernames e.g. ayo_1, ayo_2"
               {...form.register("membersCsv")}
             />
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-[#968da0]">
               MVP: you can also add members later using your invite code.
             </div>
           </div>
 
-          <div className="space-y-1 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Description (optional)</label>
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Description (Optional)</label>
             <textarea
               rows={3}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all font-mono"
               {...form.register("description")}
             />
           </div>
         </div>
 
         {mut.isError ? (
-          <div className="mt-4 rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+          <div className="mt-6 rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] font-bold">
             {getAxiosErrorMessage(mut.error)}
           </div>
         ) : null}
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           <button
             type="submit"
             disabled={disabled}
-            className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            className="rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-8 py-3 text-sm font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_8px_24px_rgba(214,186,255,0.25)]"
           >
-            {mut.isPending ? "Creating..." : "Create group"}
+            {mut.isPending ? "Creating..." : "Create Group"}
           </button>
         </div>
       </form>

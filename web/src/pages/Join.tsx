@@ -36,26 +36,29 @@ export default function Join() {
   const isJoining = joinMut.isPending;
 
   return (
-    <div className="mx-auto max-w-md space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/15 via-emerald-500/10 to-amber-500/10 p-6 shadow-sm dark:bg-slate-900/40">
-        <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">Join via Invite Link</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          This is invite-only. Enter the code shared by the group creator.
-        </p>
+    <div className="mx-auto max-w-md space-y-6">
+      <div className="relative">
+        <div className="absolute -inset-1 bg-linear-to-r from-[#d6baff]/20 to-[#40e56c]/10 blur-2xl opacity-50 pointer-events-none"></div>
+        <div className="relative rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+          <h1 className="font-headline text-3xl font-extrabold text-[#d6baff] tracking-tight">Join via Invite Link</h1>
+          <p className="mt-2 text-sm text-[#968da0]">
+            This is invite-only. Enter the code shared by the group creator.
+          </p>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/70 p-5 shadow-sm dark:bg-slate-900/40">
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Invite code</label>
+      <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
+        <div className="space-y-4">
+          <label className="text-xs font-bold uppercase tracking-wider text-[#968da0]">Invite Code</label>
           <input
             value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            placeholder="e.g. 3f2a9b..."
+            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-3 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all font-semibold tracking-widest"
+            placeholder="e.g. 3F2A9B..."
           />
 
           {joinMut.isError ? (
-            <div className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+            <div className="rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] font-bold">
               {getAxiosErrorMessage(joinMut.error)}
             </div>
           ) : null}
@@ -63,9 +66,9 @@ export default function Join() {
           <button
             disabled={isJoining || inviteCode.trim().length < 1}
             onClick={() => joinMut.mutate(inviteCode)}
-            className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            className="w-full rounded-lg bg-linear-to-br from-[#40e56c] to-[#02c953] px-6 py-3 text-sm font-bold text-[#003912] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_8px_24px_rgba(64,229,108,0.25)]"
           >
-            {isJoining ? "Joining..." : "Join group"}
+            {isJoining ? "Joining..." : "Join Circle"}
           </button>
         </div>
       </div>

@@ -14,7 +14,7 @@ import Profile from "./pages/Profile";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#111417]">
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Routes>
@@ -35,7 +35,7 @@ export default function App() {
           <Route
             path="*"
             element={
-              <div className="py-16 text-center text-slate-600 dark:text-slate-300">
+              <div className="py-16 text-center text-[#cdc2d7]">
                 Page not found.
               </div>
             }

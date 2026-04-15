@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ContriPay Onboarding - The Sovereign Vault</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#280056",
+                    "surface-dim": "#111417",
+                    "on-surface-variant": "#cdc2d7",
+                    "primary-container": "#ab73ff",
+                    "on-secondary": "#003912",
+                    "secondary": "#40e56c",
+                    "secondary-fixed": "#69ff87",
+                    "error-container": "#93000a",
+                    "surface-container": "#1d2023",
+                    "on-error-container": "#ffdad6",
+                    "on-surface": "#e1e2e7",
+                    "tertiary-container": "#89929c",
+                    "surface-container-highest": "#323538",
+                    "on-primary-fixed-variant": "#6000bf",
+                    "surface-container-lowest": "#0b0e11",
+                    "primary-fixed": "#ecdcff",
+                    "surface-container-high": "#272a2e",
+                    "on-primary": "#430089",
+                    "surface": "#111417",
+                    "inverse-surface": "#e1e2e7",
+                    "outline-variant": "#4b4454",
+                    "on-secondary-container": "#004d1b",
+                    "on-secondary-fixed": "#002108",
+                    "surface-container-low": "#191c1f",
+                    "on-tertiary-container": "#222b33",
+                    "secondary-fixed-dim": "#3ce36a",
+                    "tertiary": "#bec7d2",
+                    "primary": "#d6baff",
+                    "outline": "#968da0",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#d6baff",
+                    "inverse-on-surface": "#2e3134",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed": "#141c24",
+                    "background": "#111417",
+                    "on-background": "#e1e2e7",
+                    "surface-tint": "#d6baff",
+                    "on-tertiary-fixed-variant": "#3f4850",
+                    "secondary-container": "#02c953",
+                    "on-primary-container": "#3a0078",
+                    "tertiary-fixed": "#dae3ee",
+                    "surface-bright": "#37393d",
+                    "surface-variant": "#323538",
+                    "on-secondary-fixed-variant": "#00531e",
+                    "on-tertiary": "#29313a",
+                    "tertiary-fixed-dim": "#bec7d2",
+                    "inverse-primary": "#7a2fda"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .obsidian-glass {
+            background: rgba(29, 32, 35, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .glow-primary {
+            filter: drop-shadow(0 0 20px rgba(214, 186, 255, 0.15));
+        }
+        .glow-secondary {
+            filter: drop-shadow(0 0 15px rgba(64, 229, 108, 0.25));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen flex flex-col items-center justify-center overflow-x-hidden">
+<!-- Hero Illustration & Background Architecture -->
+<div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+<!-- Tonal Depth Gradients -->
+<div class="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute -bottom-[5%] -right-[5%] w-[50%] h-[50%] bg-secondary/5 rounded-full blur-[100px]"></div>
+</div>
+<!-- Main Content Shell -->
+<main class="relative z-10 w-full max-w-md px-8 py-12 flex flex-col min-h-screen">
+<!-- Brand Header (Simplified for Onboarding) -->
+<header class="flex flex-col items-center mb-16">
+<div class="w-16 h-16 bg-surface-container rounded-lg flex items-center justify-center mb-6 glow-primary">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<span class="font-headline font-black italic text-primary text-2xl tracking-tighter">The Sovereign Vault</span>
+</header>
+<!-- Sophisticated Graphic Representation -->
+<div class="flex-grow flex flex-col justify-center mb-12">
+<div class="relative w-full aspect-square flex items-center justify-center">
+<!-- Outer Ring - Circles representation -->
+<div class="absolute inset-0 border border-outline-variant/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
+<!-- Central Asset -->
+<div class="relative z-20 w-48 h-48 rounded-lg bg-surface-container shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col items-center justify-center border-t border-outline-variant/30">
+<img alt="" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" data-alt="Abstract 3D crystalline structure representing secure digital encryption with deep purple and emerald refractive highlights on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnWZjM2jwSyTjFBrwg1J_x4kgX7wuRCt6dfTVngPS6QLZFEUej0IVIPwE_SWCFQvMia0T2pWYd7fJ-MTZfTwzz0oy28JbLhT8vVdELNBViu1iWIPG-5-Ut-iB4B1mBeI5FQeat7sET2rsNP8sSsugNrFdzJXuXA5hRxs6UJ87mVU_zNuIxz4YHCizr2HmzVHbd7wga9jzGdNv0p3jfUz6TzOHHa89871ReT-q0_WFf_g6FSm-HxZo-tEhl15orYsBMp8dhCDclPaP_"/>
+<div class="relative z-10 text-center">
+<span class="text-4xl font-headline font-bold text-on-surface block tracking-tight">$42,850</span>
+<span class="text-[10px] font-label uppercase tracking-[0.2em] text-on-surface-variant">Vault Balance</span>
+</div>
+</div>
+<!-- Floating Community Members (Asymmetric Layout) -->
+<div class="absolute top-4 left-4 w-12 h-12 rounded-full border-2 border-surface bg-surface-container overflow-hidden z-30 shadow-lg">
+<img alt="" class="w-full h-full object-cover" data-alt="Professional portrait of a middle-aged man with a kind smile, clean studio lighting with dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbpO07L8COaiaub1dJMd03yqpOgje8F8Xob5YuawgbA7CMo15vuWT-Y_FumvP1buU22cQz5vJSFXTfBSC3SaJg4rEzqZw5uFJOShDD9fmZalr9rEs1Uq7EnmGyvDF_jMwrhf9OPS9-THZ8JVBUZfQ8HSjH8owV3WB5C5DvLh8EVkaUiQgdMT903fOtCkyfKfpyF3HFPvP2Poc5iy9aAuSqCebAqV8PEMm5GwXbJjNLKpakHPSdXTYIswLFSbNtKlQXoy7-UoxszJ_q"/>
+</div>
+<div class="absolute bottom-8 right-2 w-14 h-14 rounded-full border-2 border-surface bg-surface-container overflow-hidden z-30 shadow-lg">
+<img alt="" class="w-full h-full object-cover" data-alt="Headshot of a young professional woman with smiling eyes, soft natural side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCq_NGhilp8cEaMIeQPnKycUp5P7TAHg32JYYCAhRc7sLpmFW7o57n0XVWuRiB1ewTgtaipCwT0V_KNrRFNkh9m1uWa13jL_Y9BKyk9r5cmIqO0h9xnZF078vFhgDMqFJN4-tNEe73-DVrSCyon1tOPi8khyVIuKczd0U4geqLRery0VIB1JLst5qnbrb-gh3xsfku9Hmwi-h4C8Wj2eLFfSFzZI3UROaeQjT16NXNLhDPK5P6dtT3WHC0cNVQGiGfRW4pDUy1vbTuc"/>
+</div>
+<!-- Growth Indicator -->
+<div class="absolute top-[20%] right-[-10%] obsidian-glass px-4 py-2 rounded-lg border-t border-outline-variant/20 flex items-center gap-2 z-30 glow-secondary">
+<span class="material-symbols-outlined text-secondary text-sm">trending_up</span>
+<span class="text-secondary font-headline font-bold text-sm">+12.4%</span>
+</div>
+</div>
+</div>
+<!-- Copy Section -->
+<section class="text-center mb-10">
+<h1 class="font-headline font-extrabold text-4xl tracking-tight text-on-surface mb-4 leading-tight">
+                Grow Together, <br/>Save Securely.
+            </h1>
+<p class="font-body text-on-surface-variant text-base leading-relaxed max-w-[280px] mx-auto">
+                Join trusted contribution groups and manage your wealth with confidence.
+            </p>
+</section>
+<!-- CTA Action Cluster -->
+<footer class="flex flex-col gap-4 mt-auto">
+<button class="w-full py-5 rounded-xl bg-gradient-to-br from-secondary to-secondary-container text-on-secondary font-headline font-bold text-lg glow-secondary active:scale-95 transition-transform">
+                Get Started
+            </button>
+<a class="w-full py-4 text-center text-on-surface-variant font-label font-medium hover:text-primary transition-colors active:scale-95 duration-150" href="#">
+                Log in to my account
+            </a>
+</footer>
+<!-- Safety Disclaimer -->
+<div class="mt-12 text-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full border border-outline-variant/10">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">verified_user</span>
+<span class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant">Sovereign Encryption Level 4</span>
+</div>
+</div>
+</main>
+<!-- Decoration for Desktop users to fill the canvas -->
+<div class="hidden lg:block fixed left-20 bottom-20 w-64 h-64 border-l border-b border-outline-variant/10 pointer-events-none opacity-50"></div>
+<div class="hidden lg:block fixed right-20 top-20 w-64 h-64 border-r border-t border-outline-variant/10 pointer-events-none opacity-50"></div>
+</body></html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ContriPay - Secure Vault Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#280056",
+                        "surface-dim": "#111417",
+                        "on-surface-variant": "#cdc2d7",
+                        "primary-container": "#ab73ff",
+                        "on-secondary": "#003912",
+                        "secondary": "#40e56c",
+                        "secondary-fixed": "#69ff87",
+                        "error-container": "#93000a",
+                        "surface-container": "#1d2023",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#e1e2e7",
+                        "tertiary-container": "#89929c",
+                        "surface-container-highest": "#323538",
+                        "on-primary-fixed-variant": "#6000bf",
+                        "surface-container-lowest": "#0b0e11",
+                        "primary-fixed": "#ecdcff",
+                        "surface-container-high": "#272a2e",
+                        "on-primary": "#430089",
+                        "surface": "#111417",
+                        "inverse-surface": "#e1e2e7",
+                        "outline-variant": "#4b4454",
+                        "on-secondary-container": "#004d1b",
+                        "on-secondary-fixed": "#002108",
+                        "surface-container-low": "#191c1f",
+                        "on-tertiary-container": "#222b33",
+                        "secondary-fixed-dim": "#3ce36a",
+                        "tertiary": "#bec7d2",
+                        "primary": "#d6baff",
+                        "outline": "#968da0",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#d6baff",
+                        "inverse-on-surface": "#2e3134",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed": "#141c24",
+                        "background": "#111417",
+                        "on-background": "#e1e2e7",
+                        "surface-tint": "#d6baff",
+                        "on-tertiary-fixed-variant": "#3f4850",
+                        "secondary-container": "#02c953",
+                        "on-primary-container": "#3a0078",
+                        "tertiary-fixed": "#dae3ee",
+                        "surface-bright": "#37393d",
+                        "surface-variant": "#323538",
+                        "on-secondary-fixed-variant": "#00531e",
+                        "on-tertiary": "#29313a",
+                        "tertiary-fixed-dim": "#bec7d2",
+                        "inverse-primary": "#7a2fda"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-vault {
+            background: rgba(29, 32, 35, 0.7);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen flex flex-col">
+<!-- TopAppBar Fragment (Shared Component Integration) -->
+<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl flex justify-between items-center px-6 py-6 w-full bg-gradient-to-b from-[#111417] to-transparent">
+<div class="flex items-center gap-2">
+<span class="text-[#D6BAFF] font-black italic font-headline text-2xl tracking-tight">ContriPay</span>
+</div>
+<div class="p-2 rounded-full hover:opacity-80 transition-opacity active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-[#D6BAFF]">shield</span>
+</div>
+</header>
+<main class="flex-grow flex items-center justify-center px-6 pt-24 pb-12 relative overflow-hidden">
+<!-- Background Ambient Glow -->
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-container/10 blur-[100px] rounded-full"></div>
+<div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/5 blur-[80px] rounded-full"></div>
+<div class="w-full max-w-md relative z-10">
+<!-- Login Card -->
+<div class="bg-surface-container-low rounded-lg p-8 shadow-[0_16px_32px_rgba(0,0,0,0.4)] relative overflow-hidden">
+<!-- Branding Context -->
+<div class="mb-10 text-center">
+<h1 class="font-headline font-extrabold text-4xl text-on-surface mb-2 tracking-tight">Sovereign Vault</h1>
+<p class="font-label text-on-surface-variant text-sm uppercase tracking-[0.2em]">Enter your secure access credentials</p>
+</div>
+<form class="space-y-6">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="block font-label text-on-surface text-xs font-bold uppercase tracking-wider ml-1" for="email">Vault ID / Email</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 px-5 text-on-surface font-body focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-highest transition-all outline-none" id="email" placeholder="name@vault.com" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<div class="flex justify-between items-center px-1">
+<label class="block font-label text-on-surface text-xs font-bold uppercase tracking-wider" for="password">Access Key</label>
+<a class="text-primary text-[11px] font-bold uppercase tracking-tighter hover:opacity-80 transition-opacity" href="#">Forgot Key?</a>
+</div>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-xl py-4 px-5 text-on-surface font-body focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-highest transition-all outline-none" id="password" placeholder="••••••••••••" type="password"/>
+</div>
+</div>
+<!-- Action Button -->
+<div class="pt-2">
+<button class="w-full bg-gradient-to-br from-secondary to-secondary-container text-on-secondary font-headline font-bold text-lg py-4 rounded-xl shadow-[0_8px_24px_rgba(64,229,108,0.25)] hover:opacity-90 active:scale-[0.98] transition-all" type="submit">
+                            Sign In
+                        </button>
+</div>
+<!-- Divider Contextual Tonal Shift -->
+<div class="flex items-center gap-4 py-4">
+<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+<span class="font-label text-outline text-[10px] uppercase tracking-widest">Biometric Access</span>
+<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+</div>
+<!-- Biometric Option -->
+<div class="flex justify-center">
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95" type="button">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30 group-hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-4xl text-primary" data-icon="face">face</span>
+</div>
+<span class="font-label text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">Face ID</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Footer Navigation -->
+<div class="mt-12 text-center">
+<p class="font-body text-on-surface-variant text-sm">
+                    New to the collective? 
+                    <a class="text-secondary font-bold ml-1 hover:underline" href="#">Create an account</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Asymmetric Hero Element (Visual Flourish) -->
+<div class="fixed -bottom-24 -left-24 w-64 h-64 rounded-full bg-primary/5 border border-primary/10 pointer-events-none"></div>
+<!-- Success Indication Backdrop Image (Decorative) -->
+<div class="fixed inset-0 z-[-1] opacity-20">
+<div class="w-full h-full bg-cover bg-center" data-alt="abstract 3d digital flowing shapes in deep violet and emerald green representing secure network connections and financial flow" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfmOkjBW2_TVSPCMVaHayT7dodUVZucZaUIwu8S9WNiAbTKJJ4VJQWl0jVEGLMMMCD84yFz5xkvjpykFaBX2sElAPu0yJZKAnIEy0rWhUswbxpoGLFA_t92xumVpcCo5uq5Y9PAdrzd6AzdKTEBQFs3WBSOx-yjjDAz-B1nBlusu06QRmhLqMapmvIDqIP5ZnFxsMHrdrq-9PsI9wwpM9JC9Qa6Q5esvLm9Mfny6zTOn2zfInY_PPDBbd9jew3qWXy2nXWvW30XtLm')"></div>
+</div>
+</body></html>
