@@ -32,33 +32,47 @@ export function LoginScreen({ onGoRegister }: { onGoRegister: () => void }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingBottom: 8 }}
       >
-        <View style={{ width: "100%", maxWidth: 460, alignSelf: "center", gap: 14 }}>
-          <View style={{ gap: 8, alignItems: "center" }}>
-            <Eyebrow>contripay</Eyebrow>
-            <View style={{ alignItems: "center", gap: 6 }}>
-              <Text style={{ color: colors.text, fontSize: 30, fontWeight: "800", textAlign: "center" }}>Sign in</Text>
-              <Text style={{ color: colors.muted, fontSize: 15, lineHeight: 22, textAlign: "center" }}>
-                Welcome back. Enter your account details to continue.
-              </Text>
+        <View style={{ width: "100%", maxWidth: 460, alignSelf: "center", gap: 18 }}>
+          <View style={{ gap: 8, alignItems: "center", marginBottom: 4 }}>
+            <Eyebrow>ContriPay</Eyebrow>
+            <View style={{ alignItems: "center", gap: 8 }}>
+              <Title>ContriPay</Title>
+              <Subtitle>Enter your secure access credentials.</Subtitle>
             </View>
           </View>
 
-          <Card>
-            <View style={{ gap: 12 }}>
+          <Card style={{ borderRadius: 28, padding: 20 }}>
+            <View style={{ gap: 14 }}>
               <View style={{ gap: 12 }}>
-                <Text style={{ color: colors.text, fontWeight: "700" }}>Email or username</Text>
-                <Field placeholder="Enter email or username" autoCapitalize="none" value={emailOrUsername} onChangeText={setEmailOrUsername} />
-                <Text style={{ color: colors.text, fontWeight: "700" }}>Password</Text>
-                <Field placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+                <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.6 }}>Vault ID / Email</Text>
+                <Field placeholder="name@vault.com" autoCapitalize="none" value={emailOrUsername} onChangeText={setEmailOrUsername} />
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.6 }}>Access key</Text>
+                  <Text style={{ color: colors.brand, fontSize: 11, fontWeight: "800" }}>Forgot key?</Text>
+                </View>
+                <Field placeholder="••••••••••••" secureTextEntry value={password} onChangeText={setPassword} />
               </View>
 
               <ErrorText message={error} />
-              <PrimaryButton label="Login" onPress={onSubmit} loading={loading} />
+              <PrimaryButton label="Sign In" onPress={onSubmit} loading={loading} tone="accent" />
+
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(150,141,160,0.28)" }} />
+                <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.4 }}>Biometric Access</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(150,141,160,0.28)" }} />
+              </View>
+
+              <View style={{ alignItems: "center", gap: 8 }}>
+                <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: colors.panelElevated, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: colors.brand, fontSize: 20, fontWeight: "900" }}>◉</Text>
+                </View>
+                <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.4 }}>Face ID</Text>
+              </View>
             </View>
           </Card>
 
           <Pressable onPress={onGoRegister} style={{ alignSelf: "center", paddingVertical: 8 }}>
-            <Text style={{ color: colors.brandSoft, fontWeight: "700" }}>Don't have an account? Register</Text>
+            <Text style={{ color: colors.muted, fontWeight: "600" }}>New to the collective? <Text style={{ color: colors.accent, fontWeight: "800" }}>Create an account</Text></Text>
           </Pressable>
         </View>
       </ScrollView>

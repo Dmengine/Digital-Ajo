@@ -94,15 +94,15 @@
   </head>
 <body class="bg-surface text-on-surface font-body min-h-screen flex flex-col">
 <!-- TopAppBar Fragment (Shared Component Integration) -->
-<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl flex justify-between items-center px-6 py-6 w-full bg-gradient-to-b from-[#111417] to-transparent">
+<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl flex justify-between items-center px-6 py-6 bg-linear-to-b from-[#111417] to-transparent">
 <div class="flex items-center gap-2">
 <span class="text-[#D6BAFF] font-black italic font-headline text-2xl tracking-tight">ContriPay</span>
 </div>
-<div class="p-2 rounded-full hover:opacity-80 transition-opacity active:scale-95 transition-all duration-200">
+<div class="p-2 rounded-full hover:opacity-80 active:scale-95 transition-all duration-200">
 <span class="material-symbols-outlined text-[#D6BAFF]">shield</span>
 </div>
 </header>
-<main class="flex-grow flex items-center justify-center px-6 pt-24 pb-12 relative overflow-hidden">
+<main class="grow flex items-center justify-center px-6 pt-24 pb-12 relative overflow-hidden">
 <!-- Background Ambient Glow -->
 <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-container/10 blur-[100px] rounded-full"></div>
 <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-secondary/5 blur-[80px] rounded-full"></div>
@@ -134,15 +134,15 @@
 </div>
 <!-- Action Button -->
 <div class="pt-2">
-<button class="w-full bg-gradient-to-br from-secondary to-secondary-container text-on-secondary font-headline font-bold text-lg py-4 rounded-xl shadow-[0_8px_24px_rgba(64,229,108,0.25)] hover:opacity-90 active:scale-[0.98] transition-all" type="submit">
+<button class="w-full bg-linear-to-br from-secondary to-secondary-container text-on-secondary font-headline font-bold text-lg py-4 rounded-xl shadow-[0_8px_24px_rgba(64,229,108,0.25)] hover:opacity-90 active:scale-[0.98] transition-all" type="submit">
                             Sign In
                         </button>
 </div>
 <!-- Divider Contextual Tonal Shift -->
 <div class="flex items-center gap-4 py-4">
-<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+<div class="h-px grow bg-outline-variant/20"></div>
 <span class="font-label text-outline text-[10px] uppercase tracking-widest">Biometric Access</span>
-<div class="h-[1px] flex-grow bg-outline-variant/20"></div>
+<div class="h-px grow bg-outline-variant/20"></div>
 </div>
 <!-- Biometric Option -->
 <div class="flex justify-center">

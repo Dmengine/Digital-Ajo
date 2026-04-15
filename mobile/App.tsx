@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StatusBar, Text, View } from "react-nativ
 import { DarkTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthProvider, useAuth } from "./src/store/AuthContext";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -16,6 +17,7 @@ import { colors } from "./src/theme/colors";
 import type { RootStackParamList } from "./src/navigation/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const ONBOARDING_KEY = "ajo.mobile.onboardingDone";
 const linking = {
   prefixes: ["contripay://"],
   config: {
@@ -45,7 +47,7 @@ function LoadingScreen() {
           >
             <ActivityIndicator color={colors.brandSoft} />
           </View>
-          <Text style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>Loading contripay</Text>
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>Loading ContriPay</Text>
           <Text style={{ color: colors.muted, textAlign: "center", lineHeight: 20 }}>
             Preparing your wallet, groups, and secure session.
           </Text>
@@ -118,7 +120,7 @@ function AppStack({ onLogout }: { onLogout: () => void }) {
       <Stack.Screen
         name="Dashboard"
         options={{
-          title: "contripay",
+          title: "ContriPay",
           headerRight: () => <LogoutButton onPress={onLogout} />,
         }}
       >
@@ -147,8 +149,34 @@ function Navigator() {
   const { token, loading, logout } = useAuth();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingReady, setOnboardingReady] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    let active = true;
+
+    const loadOnboardingState = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(ONBOARDING_KEY);
+        if (!active) return;
+        setOnboardingDone(saved === "true");
+      } finally {
+        if (active) setOnboardingReady(true);
+      }
+    };
+
+    void loadOnboardingState();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const completeOnboarding = async () => {
+    setOnboardingDone(true);
+    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+  };
+
+  if (loading || !onboardingReady) {
     return <LoadingScreen />;
   }
 
@@ -168,10 +196,12 @@ function Navigator() {
         },
       }}
     >
-      {!onboardingDone ? (
+      {token ? (
+        <AppStack onLogout={() => void logout()} />
+      ) : !onboardingDone ? (
         <OnboardingFlow
           onFinish={() => {
-            setOnboardingDone(true);
+            void completeOnboarding();
           }}
         />
       ) : !token ? (

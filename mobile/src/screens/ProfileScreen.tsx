@@ -39,19 +39,38 @@ export function ProfileScreen() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 10 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 10 }}>
         <View style={{ gap: 8 }}>
-          <Eyebrow>Profile</Eyebrow>
-          <Title>Verification and bank details.</Title>
-          <Subtitle>Keep your identity and withdrawal details current so transfers and group access stay smooth.</Subtitle>
+          <Eyebrow>ContriPay</Eyebrow>
+          <Title>Profile & KYC</Title>
+          <Subtitle>Manage your account identity, security status, and settlement details.</Subtitle>
+        </View>
+
+        <Card style={{ alignItems: "center", gap: 6, paddingTop: 22, paddingBottom: 22 }}>
+          <View style={{ width: 104, height: 104, borderRadius: 52, backgroundColor: colors.panelElevated, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: colors.brand, fontSize: 30, fontWeight: "900" }}>{(user?.name ?? "M").slice(0, 1).toUpperCase()}</Text>
+          </View>
+          <Text style={{ color: colors.text, fontSize: 28, fontWeight: "900", letterSpacing: -0.8 }}>{user?.name ?? "Member"}</Text>
+          <Text style={{ color: colors.muted, fontWeight: "600" }}>Vault Member</Text>
+        </Card>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Card style={{ flex: 1 }}>
+            <SectionLabel>Identity status</SectionLabel>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: "900", marginTop: 6 }}>Tier {user?.kycTier ?? 1}</Text>
+            <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "800", marginTop: 6 }}>Fully verified</Text>
+          </Card>
+          <Card style={{ flex: 1 }}>
+            <SectionLabel>Settlement</SectionLabel>
+            <Text style={{ color: colors.brand, fontSize: 20, fontWeight: "900", marginTop: 6 }}>•••• {accountNumber.slice(-4) || "----"}</Text>
+            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 6 }}>{bankName || "No bank selected"}</Text>
+          </Card>
         </View>
 
         <Card>
           <View style={{ gap: 8 }}>
-            <SectionLabel>Account status</SectionLabel>
-            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "800" }}>{user?.name ?? "Member"}</Text>
+            <SectionLabel>Account snapshot</SectionLabel>
             <Text style={{ color: colors.muted, lineHeight: 20 }}>
-              KYC tier {user?.kycTier ?? 1} · Reliability {Number(user?.reliabilityScore ?? 100)}% · Wallet N{Number(user?.wallets?.main ?? 0).toLocaleString()}
+              Reliability {Number(user?.reliabilityScore ?? 100)}% · Wallet ₦{Number(user?.wallets?.main ?? 0).toLocaleString()}
             </Text>
           </View>
         </Card>
@@ -78,7 +97,7 @@ export function ProfileScreen() {
         <Card>
           <View style={{ gap: 10 }}>
             <PrimaryButton label="Submit Tier 1 KYC" onPress={onSubmit} tone="accent" />
-            <PrimaryButton label="Logout" onPress={() => void logout()} tone="ghost" />
+            <PrimaryButton label="Log Out" onPress={() => void logout()} tone="ghost" />
           </View>
         </Card>
 

@@ -36,11 +36,11 @@ function badgeColor(groupType: GroupDetail["groupType"]) {
     case "high":
       return { backgroundColor: "rgba(255,126,95,0.16)", textColor: "#ffb3a0" };
     case "premium":
-      return { backgroundColor: "rgba(124,92,255,0.18)", textColor: colors.brandSoft };
+      return { backgroundColor: "rgba(214,186,255,0.20)", textColor: colors.brand };
   }
 }
 
-export function GroupDetailScreen({ route }: Props): JSX.Element {
+export function GroupDetailScreen({ route }: Props): React.JSX.Element {
   const { token } = useAuth();
   const { groupId, groupName } = route.params;
   const socketRef = useRef<Socket | null>(null);
@@ -246,7 +246,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
               <View style={{ gap: 12 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                   <View style={{ flex: 1, gap: 8 }}>
-                    <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, alignSelf: "flex-start", backgroundColor: meta?.backgroundColor ?? "rgba(124,92,255,0.18)" }}>
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, alignSelf: "flex-start", backgroundColor: meta?.backgroundColor ?? "rgba(214,186,255,0.20)" }}>
                       <Text style={{ color: meta?.textColor ?? colors.brandSoft, fontWeight: "800", fontSize: 11 }}>
                         {group.groupType.toUpperCase()}
                       </Text>
@@ -258,24 +258,84 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={{ color: colors.muted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>Contribution</Text>
-                    <Text style={{ color: colors.text, fontSize: 22, fontWeight: "900" }}>N{Number(group.contributionAmount).toLocaleString()}</Text>
+                    <Text style={{ color: colors.text, fontSize: 22, fontWeight: "900" }}>₦{Number(group.contributionAmount).toLocaleString()}</Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>{group.frequency}</Text>
                   </View>
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1, borderRadius: 18, backgroundColor: colors.panelElevated, padding: 12 }}>
+                    <View style={{ flex: 1, borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12 }}>
                     <Text style={{ color: colors.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Members</Text>
                     <Text style={{ color: colors.text, fontWeight: "800", marginTop: 4 }}>{dashboard?.members.length ?? group.members?.length ?? 0}</Text>
                   </View>
-                  <View style={{ flex: 1, borderRadius: 18, backgroundColor: colors.panelElevated, padding: 12 }}>
+                    <View style={{ flex: 1, borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12 }}>
                     <Text style={{ color: colors.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Defaulters</Text>
                     <Text style={{ color: colors.text, fontWeight: "800", marginTop: 4 }}>{dashboard?.defaulters.length ?? 0}</Text>
                   </View>
                 </View>
+                {dashboard?.group.roundStatus === "paused" ? (
+                  <View
+                    style={{
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "rgba(255,211,154,0.35)",
+                      backgroundColor: "rgba(255,211,154,0.12)",
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      gap: 4,
+                    }}
+                  >
+                    <Text style={{ color: colors.warning, fontWeight: "800", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                      Round Paused Due To Defaulters
+                    </Text>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      This round is paused because at least one contribution is unresolved.
+                    </Text>
+                    {dashboard.group.roundGraceEndsAt ? (
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        Grace ends {new Date(dashboard.group.roundGraceEndsAt).toLocaleString()}.
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
                 <Text style={{ color: connected ? colors.accent : colors.warning, fontWeight: "700", fontSize: 12 }}>
                   {connected ? "Live chat connected" : "Chat connection pending"}
                 </Text>
+              </View>
+            </Card>
+          ) : null}
+
+          {dashboard ? (
+            <Card>
+              <SectionLabel>Defaulters</SectionLabel>
+              <View style={{ marginTop: 10, gap: 10 }}>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  Members with failed, unpaid, or defaulted contribution records.
+                </Text>
+                {dashboard.defaulters.length === 0 ? (
+                  <View style={{ borderRadius: 12, backgroundColor: colors.panelElevated, padding: 12 }}>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>No defaulters recorded yet.</Text>
+                  </View>
+                ) : (
+                  dashboard.defaulters.map((member) => (
+                    <View
+                      key={`defaulter-${member.userId}`}
+                      style={{
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: "rgba(255,211,154,0.25)",
+                        backgroundColor: "rgba(255,211,154,0.08)",
+                        padding: 12,
+                        gap: 6,
+                      }}
+                    >
+                      <Text style={{ color: colors.text, fontWeight: "800" }}>{member.name ?? member.username ?? "Member"}</Text>
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        @{member.username ?? "unknown"} · failed: {member.failedContributions} · unpaid: {member.unpaidContributions} · defaulted: {member.defaultedContributions}
+                      </Text>
+                    </View>
+                  ))
+                )}
               </View>
             </Card>
           ) : null}
@@ -290,14 +350,14 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                     onPress={() => setSelectedMember(member)}
                     style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
                   >
-                    <View style={{ borderRadius: 18, backgroundColor: colors.panelElevated, padding: 12, gap: 8 }}>
+                    <View style={{ borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12, gap: 8 }}>
                       <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: colors.text, fontWeight: "800" }}>{member.name ?? member.username ?? "Member"}</Text>
                           <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>Order #{member.order}</Text>
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
-                          <Text style={{ color: colors.text, fontWeight: "800" }}>N{Number(member.totalPaid).toLocaleString()}</Text>
+                          <Text style={{ color: colors.text, fontWeight: "800" }}>₦{Number(member.totalPaid).toLocaleString()}</Text>
                           <Text style={{ color: colors.muted, fontSize: 12 }}>{member.hasReceived ? "Received payout" : "Awaiting payout"}</Text>
                         </View>
                       </View>
@@ -319,7 +379,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                   {selectedMember.name ?? selectedMember.username ?? "Member"}
                 </Text>
                 <Text style={{ color: colors.muted }}>@{selectedMember.username ?? "unknown"} · Order #{selectedMember.order}</Text>
-                <Text style={{ color: colors.muted }}>Total paid: N{Number(selectedMember.totalPaid).toLocaleString()}</Text>
+                <Text style={{ color: colors.muted }}>Total paid: ₦{Number(selectedMember.totalPaid).toLocaleString()}</Text>
                 <Text style={{ color: colors.muted }}>
                   Completed {selectedMember.completedContributions} · Pending {selectedMember.pendingContributions} · Failed {selectedMember.failedContributions} · Unpaid {selectedMember.unpaidContributions} · Defaulted {selectedMember.defaultedContributions}
                 </Text>
@@ -354,7 +414,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                   autoCapitalize="none"
                   autoCorrect={false}
                   style={{
-                    borderRadius: 18,
+                    borderRadius: 14,
                     borderWidth: 1,
                     borderColor: colors.border,
                     backgroundColor: colors.panelElevated,
@@ -390,7 +450,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                       <View
                         key={`remove-${member.userId}`}
                         style={{
-                          borderRadius: 16,
+                          borderRadius: 14,
                           backgroundColor: colors.panelElevated,
                           borderWidth: 1,
                           borderColor: colors.border,
@@ -443,7 +503,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                 </View>
               ) : null}
               {messages.map((message) => (
-                <View key={message._id} style={{ gap: 4, padding: 12, borderRadius: 18, backgroundColor: colors.panelElevated }}>
+                <View key={message._id} style={{ gap: 4, padding: 12, borderRadius: 14, backgroundColor: colors.panelElevated }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                     <Text style={{ color: colors.text, fontWeight: "800" }}>{getSenderName(message.sender)}</Text>
                     <Text style={{ color: colors.muted, fontSize: 11 }}>{new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</Text>
@@ -463,7 +523,7 @@ export function GroupDetailScreen({ route }: Props): JSX.Element {
                 style={{
                   minHeight: 96,
                   textAlignVertical: "top",
-                  borderRadius: 18,
+                  borderRadius: 14,
                   borderWidth: 1,
                   borderColor: colors.border,
                   backgroundColor: colors.panelElevated,

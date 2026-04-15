@@ -1,61 +1,15 @@
 import React from "react";
-import { Animated, ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
 
 export function Screen({ children }: { children: React.ReactNode }) {
-  const { width } = useWindowDimensions();
-  const orbOne = React.useRef(new Animated.Value(0)).current;
-  const orbTwo = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    const drift = (value: Animated.Value, toValue: number, duration: number) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(value, { toValue, duration, useNativeDriver: true }),
-          Animated.timing(value, { toValue: 0, duration, useNativeDriver: true }),
-        ])
-      ).start();
-    };
-
-    drift(orbOne, 1, 9000);
-    drift(orbTwo, 1, 11000);
-  }, [orbOne, orbTwo]);
-
-  const glowOne = {
-    transform: [
-      {
-        translateX: orbOne.interpolate({ inputRange: [0, 1], outputRange: [-width * 0.08, width * 0.12] }),
-      },
-      {
-        translateY: orbOne.interpolate({ inputRange: [0, 1], outputRange: [0, 40] }),
-      },
-      {
-        scale: orbOne.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }),
-      },
-    ],
-  };
-
-  const glowTwo = {
-    transform: [
-      {
-        translateX: orbTwo.interpolate({ inputRange: [0, 1], outputRange: [width * 0.22, width * 0.04] }),
-      },
-      {
-        translateY: orbTwo.interpolate({ inputRange: [0, 1], outputRange: [60, -10] }),
-      },
-      {
-        scale: orbTwo.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }),
-      },
-    ],
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.screen}>
         <View style={styles.background} pointerEvents="none">
-          <Animated.View style={[styles.orb, styles.orbOne, glowOne]} />
-          <Animated.View style={[styles.orb, styles.orbTwo, glowTwo]} />
+          <View style={[styles.orb, styles.orbOne]} />
+          <View style={[styles.orb, styles.orbTwo]} />
           <View style={styles.grid} />
         </View>
         <View style={styles.content}>{children}</View>
@@ -111,6 +65,13 @@ export function PrimaryButton({
         ? styles.buttonGhost
         : styles.button;
 
+  const buttonTextStyle =
+    tone === "accent"
+      ? styles.buttonTextAccent
+      : tone === "ghost"
+        ? styles.buttonTextGhost
+        : styles.buttonText;
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -120,7 +81,7 @@ export function PrimaryButton({
       onPress={onPress}
       disabled={Boolean(loading)}
     >
-      {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{label}</Text>}
+      {loading ? <ActivityIndicator color={tone === "accent" ? colors.inkOnAccent : colors.inkOnBrand} /> : <Text style={buttonTextStyle}>{label}</Text>}
     </Pressable>
   );
 }
@@ -153,52 +114,52 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
   orbOne: {
-    width: 220,
-    height: 220,
-    top: -60,
-    left: -60,
-    backgroundColor: "rgba(124,92,255,0.26)",
+    width: 260,
+    height: 260,
+    top: -80,
+    left: -90,
+    backgroundColor: "rgba(171,115,255,0.24)",
   },
   orbTwo: {
-    width: 180,
-    height: 180,
-    top: 80,
-    right: -40,
-    backgroundColor: "rgba(39,211,162,0.16)",
+    width: 210,
+    height: 210,
+    top: 96,
+    right: -72,
+    backgroundColor: "rgba(64,229,108,0.10)",
   },
   grid: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.18,
+    opacity: 0.08,
     backgroundColor: "transparent",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
+    borderTopWidth: 0.5,
+    borderLeftWidth: 0.5,
     borderColor: "rgba(255,255,255,0.04)",
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-    gap: 14,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 16,
   },
   title: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "800",
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: "900",
     color: colors.text,
-    letterSpacing: -0.8,
+    letterSpacing: -1.25,
     flexShrink: 1,
   },
   eyebrow: {
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 2.2,
-    color: colors.brandSoft,
+    letterSpacing: 2.4,
+    color: colors.muted,
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 23,
     color: colors.muted,
     flexShrink: 1,
   },
@@ -211,48 +172,60 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: colors.panelElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     color: colors.text,
+    fontSize: 16,
+    fontWeight: "700",
   },
   button: {
     marginTop: 8,
     backgroundColor: colors.brand,
     borderRadius: 18,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: colors.brand,
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 6,
   },
   buttonAccent: {
     marginTop: 8,
     backgroundColor: colors.accent,
     borderRadius: 18,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: colors.accent,
     shadowOpacity: 0.3,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 6,
   },
   buttonGhost: {
     marginTop: 8,
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(255,255,255,0.02)",
     borderRadius: 18,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: "center",
     borderWidth: 1,
     borderColor: colors.borderSoft,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.inkOnBrand,
+    fontWeight: "800",
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  buttonTextAccent: {
+    color: colors.inkOnAccent,
+    fontWeight: "800",
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  buttonTextGhost: {
+    color: colors.text,
     fontWeight: "800",
     fontSize: 16,
     letterSpacing: 0.2,
@@ -266,22 +239,18 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 24,
-    padding: 16,
-    shadowColor: "#000",
+    padding: 18,
+    shadowColor: "#4b4454",
     shadowOpacity: 0.22,
     shadowRadius: 24,
-    shadowOffset: { width: 0, height: 16 },
+    shadowOffset: { width: 0, height: 12 },
     elevation: 4,
   },
   statChip: {
     flex: 1,
     minWidth: 110,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.panelElevated,
     borderRadius: 18,
     padding: 12,
     gap: 4,

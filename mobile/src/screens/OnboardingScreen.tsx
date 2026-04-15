@@ -6,7 +6,7 @@ import { colors } from "../theme/colors";
 const slides = [
   {
     eyebrow: "Welcome",
-    title: "contripay helps you manage group contributions clearly.",
+    title: "ContriPay helps you manage contribution circles clearly.",
     body: "Track wallet activity, contribution cycles, and payout readiness in one simple flow.",
   },
   {
@@ -25,22 +25,39 @@ type OnboardingScreenProps = {
   onFinish: () => void;
 };
 
-export function OnboardingScreen({ onFinish }: OnboardingScreenProps): JSX.Element {
+export function OnboardingScreen({ onFinish }: OnboardingScreenProps): React.JSX.Element {
   const [index, setIndex] = useState(0);
   const slide = slides[index];
   const isLast = index === slides.length - 1;
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>
-        <View style={{ gap: 8 }}>
-          <Eyebrow>{slide.eyebrow}</Eyebrow>
-          <Title>{slide.title}</Title>
-          <Subtitle>{slide.body}</Subtitle>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 18, paddingBottom: 12 }}>
+        <View style={{ alignItems: "center", gap: 10, marginTop: 4 }}>
+          <View style={{ width: 68, height: 68, borderRadius: 20, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: colors.brand, fontSize: 30, fontWeight: "900" }}>▦</Text>
+          </View>
+          <Eyebrow>ContriPay</Eyebrow>
         </View>
 
-        <Card>
-          <View style={{ gap: 12 }}>
+        <Card style={{ padding: 20, alignItems: "center" }}>
+          <View style={{ gap: 14, width: "100%" }}>
+            <View style={{ alignSelf: "center", width: 220, height: 220, borderRadius: 110, backgroundColor: colors.panelElevated, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 154, height: 154, borderRadius: 28, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <Text style={{ color: colors.text, fontSize: 30, fontWeight: "900" }}>₦42,850</Text>
+                <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1.2 }}>Vault balance</Text>
+              </View>
+              <View style={{ position: "absolute", top: 26, right: -8, backgroundColor: colors.panel, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6 }}>
+                <Text style={{ color: colors.accent, fontWeight: "800" }}>+12.4%</Text>
+              </View>
+            </View>
+
+            <View style={{ gap: 8, alignItems: "center" }}>
+              <Eyebrow>{slide.eyebrow}</Eyebrow>
+              <Title>{slide.title}</Title>
+              <Subtitle>{slide.body}</Subtitle>
+            </View>
+
             <View style={{ flexDirection: "row", gap: 8 }}>
               {slides.map((_, dotIndex) => (
                 <View
@@ -49,17 +66,10 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps): JSX.Eleme
                     height: 8,
                     flex: 1,
                     borderRadius: 999,
-                    backgroundColor: dotIndex === index ? colors.brand : "rgba(255,255,255,0.10)",
+                    backgroundColor: dotIndex === index ? colors.brand : "rgba(75,68,84,0.45)",
                   }}
                 />
               ))}
-            </View>
-
-            <View style={{ borderRadius: 18, backgroundColor: colors.panelElevated, padding: 14, gap: 8 }}>
-              <Text style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}>Why contripay</Text>
-              <Text style={{ color: colors.muted, lineHeight: 20 }}>
-                A focused mobile experience for cooperative finance with clear, non-overlapping layouts and backend-aligned actions.
-              </Text>
             </View>
           </View>
         </Card>
@@ -81,6 +91,12 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps): JSX.Eleme
               <Text style={{ color: colors.muted, fontWeight: "700" }}>Skip</Text>
             </Pressable>
           ) : null}
+        </View>
+
+        <View style={{ alignSelf: "center", backgroundColor: colors.panel, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.3 }}>
+            ContriPay Encryption Level 4
+          </Text>
         </View>
       </ScrollView>
     </Screen>
