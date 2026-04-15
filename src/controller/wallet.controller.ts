@@ -7,6 +7,7 @@ import {
   reverseWalletDebit,
   withdrawWalletIdempotent,
 } from "../services/wallet.service";
+import { TransactionModel } from "../models/transaction.model";
 import {
   createTransferRecipient,
   initializeDeposit,
@@ -226,4 +227,17 @@ export const withdraw = asyncHandler(async (req: Request, res: Response) => {
     success: true,
     message: "Withdrawal successful",
   });
+});
+
+export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).userId as string;
+  const limitRaw = Number(req.query.limit);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 50) : 20;
+
+  const transactions = await TransactionModel.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  res.status(200).json({ success: true, transactions });
 });

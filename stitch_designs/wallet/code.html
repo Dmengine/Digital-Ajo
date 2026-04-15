@@ -92,7 +92,7 @@
   </head>
 <body class="bg-surface text-on-surface min-h-screen pb-32">
 <!-- Top App Bar -->
-<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl bg-gradient-to-b from-[#111417] to-transparent shadow-[0_16px_32px_rgba(75,68,84,0.08)]">
+<header class="fixed top-0 w-full z-50 bg-[#1D2023]/70 backdrop-blur-xl bg-linear-to-b from-[#111417] to-transparent shadow-[0_16px_32px_rgba(75,68,84,0.08)]">
 <div class="flex justify-between items-center px-6 py-4 w-full">
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30">
@@ -108,7 +108,7 @@
 <main class="pt-24 px-6 max-w-2xl mx-auto space-y-8">
 <!-- Balance Card Section -->
 <section class="relative group">
-<div class="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary-container/20 blur-2xl opacity-50 group-hover:opacity-75 transition duration-1000"></div>
+<div class="absolute -inset-1 bg-linear-to-r from-primary/20 to-primary-container/20 blur-2xl opacity-50 group-hover:opacity-75 transition duration-1000"></div>
 <div class="relative bg-surface-container rounded-lg p-8 shadow-xl overflow-hidden">
 <div class="flex justify-between items-start mb-6">
 <span class="text-on-surface-variant font-label text-sm uppercase tracking-widest">Total Vault Balance</span>
@@ -122,14 +122,14 @@
 <span class="text-on-surface-variant font-headline text-2xl font-bold">.84</span>
 </div>
 <div class="mt-8 flex gap-4 overflow-x-auto no-scrollbar">
-<div class="min-w-[140px] bg-surface-container-low p-4 rounded-md">
+<div class="min-w-35 bg-surface-container-low p-4 rounded-md">
 <p class="text-xs text-on-surface-variant mb-1">Savings Goal</p>
 <p class="font-headline font-bold text-lg text-on-surface">$50,000</p>
 <div class="w-full h-1 bg-surface-container-highest mt-2 rounded-full overflow-hidden">
 <div class="h-full bg-secondary w-[85%] shadow-[0_0_8px_#40E56C]"></div>
 </div>
 </div>
-<div class="min-w-[140px] bg-surface-container-low p-4 rounded-md">
+<div class="min-w-35 bg-surface-container-low p-4 rounded-md">
 <p class="text-xs text-on-surface-variant mb-1">Pending</p>
 <p class="font-headline font-bold text-lg text-on-surface">$1,200.00</p>
 </div>
@@ -141,7 +141,7 @@
 <h2 class="text-on-surface-variant font-label text-xs uppercase tracking-widest px-1">Actions</h2>
 <div class="grid grid-cols-1 gap-3">
 <!-- Primary Action -->
-<button class="flex items-center justify-between w-full p-5 bg-gradient-to-br from-primary to-primary-container rounded-xl text-on-primary font-headline font-bold text-lg group active:scale-[0.98] transition-all">
+<button class="flex items-center justify-between w-full p-5 bg-linear-to-br from-primary to-primary-container rounded-xl text-on-primary font-headline font-bold text-lg group active:scale-[0.98] transition-all">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-full bg-on-primary/10 flex items-center justify-center">
 <span class="material-symbols-outlined">account_balance_wallet</span>
@@ -242,7 +242,7 @@
 </section>
 </main>
 <!-- Bottom Navigation -->
-<nav class="fixed bottom-0 w-full rounded-t-[32px] z-50 pb-safe bg-[#1D2023]/90 backdrop-blur-2xl border-t border-[#4B4454]/20 shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
+<nav class="fixed bottom-0 w-full rounded-t-4xl z-50 pb-safe bg-[#1D2023]/90 backdrop-blur-2xl border-t border-[#4B4454]/20 shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
 <div class="flex justify-around items-center px-4 py-3 w-full">
 <a class="flex flex-col items-center justify-center text-[#968DA0] px-5 py-2 hover:text-[#D6BAFF]/80 active:scale-90 transition-all duration-150" href="#">
 <span class="material-symbols-outlined">grid_view</span>

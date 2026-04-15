@@ -25,6 +25,24 @@ export async function verifyDeposit(reference: string): Promise<{
   return data;
 }
 
+export type WalletTransaction = {
+  _id: string;
+  type: "deposit" | "withdrawal" | "auto-debit" | "payout" | "fee" | "reversal";
+  amount: number;
+  walletType: "main" | "locked" | "ajo";
+  status: "success" | "failed";
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+};
+
+export async function getWalletTransactions(limit = 20): Promise<{
+  success: boolean;
+  transactions: WalletTransaction[];
+}> {
+  const { data } = await api.get("/wallet/transactions", { params: { limit } });
+  return data;
+}
+
 export async function withdraw(amount: number): Promise<{ success: boolean; message: string }> {
   const idempotencyKey = createIdempotencyKey();
   const { data } = await api.post(

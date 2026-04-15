@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
-import { initDeposit, verifyDeposit, withdraw } from "../api/wallet.api";
+import { getWalletTransactions, initDeposit, verifyDeposit, withdraw } from "../api/wallet.api";
 import { me as fetchMe } from "../api/auth.api";
 import { useAuthStore } from "../store/authStore";
 import { formatNaira } from "../utils/currency";
@@ -25,7 +25,16 @@ export default function Wallet() {
     refetchInterval: 15000,
   });
 
+  const txQ = useQuery({
+    queryKey: ["wallet", "transactions"],
+    queryFn: () => getWalletTransactions(10),
+    enabled: !!token,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15000,
+  });
+
   const walletBalance = meData?.user?.wallets?.main ?? 0;
+  const transactions = txQ.data?.transactions ?? [];
 
   const depositMut = useMutation({
     mutationFn: (amt: number) => initDeposit(amt),
@@ -116,12 +125,35 @@ export default function Wallet() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wider text-[#cdc2d7] font-semibold">Recent Activity</p>
-              <p className="mt-2 text-[#968da0] text-sm">Transaction history coming soon</p>
+              {txQ.isLoading ? <p className="mt-2 text-[#968da0] text-sm">Loading transaction history...</p> : null}
+              {txQ.isError ? <p className="mt-2 text-[#ffb4ab] text-sm">{getAxiosErrorMessage(txQ.error)}</p> : null}
+              {!txQ.isLoading && !txQ.isError && transactions.length === 0 ? (
+                <p className="mt-2 text-[#968da0] text-sm">No transactions yet.</p>
+              ) : null}
             </div>
             <div className="rounded-lg bg-[#40e56c]/10 p-3 text-[#40e56c]">
               <CreditCard size={20} />
             </div>
           </div>
+
+          {transactions.length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {transactions.slice(0, 5).map((tx) => {
+                const isCredit = tx.type === "deposit" || tx.type === "payout" || tx.type === "reversal";
+                return (
+                  <div key={tx._id} className="flex items-center justify-between rounded-lg bg-[#323538]/30 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-semibold text-[#e1e2e7] capitalize">{tx.type.replace("-", " ")}</p>
+                      <p className="text-xs text-[#968da0]">{new Date(tx.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className={isCredit ? "text-[#40e56c] font-bold" : "text-[#ffb4ab] font-bold"}>
+                      {isCredit ? "+" : "-"}₦{formatNaira(tx.amount)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
