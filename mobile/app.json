@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "contripay",
-    "slug": "contripay-mobile",
+    "slug": "contripay",
     "version": "1.0.0",
     "scheme": "contripay",
     "orientation": "portrait",
@@ -31,8 +31,9 @@
     "extra": {
       "apiBaseUrl": "https://digital-ajo.onrender.com/api",
       "eas": {
-        "projectId": "6bcaf8ba-8c9e-41d8-81f0-cc59a441c36d"
+        "projectId": "e27f8b35-2493-4aca-bd72-6728d223ad69"
       }
-    }
+    },
+    "owner": "oladimeji440"
   }
 }
