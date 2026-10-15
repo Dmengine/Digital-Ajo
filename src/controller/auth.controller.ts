@@ -29,7 +29,6 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     phone,
     username,
     password: hashedPassword,
-    wallets: { main: 0, locked: [] },
   });
 
   const token = jwt.sign(
@@ -95,7 +94,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const me = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
   const user = await UserModel.findById(userId).select(
-    "name email username phone kycTier basicKycCompleted profileImage wallets.main reliabilityScore isRestricted isFlagged"
+    "name email username phone kycTier basicKycCompleted profileImage reliabilityScore isRestricted isFlagged"
   );
   if (!user) throw new HttpError(404, "User not found");
 
@@ -113,9 +112,6 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
       reliabilityScore: user.reliabilityScore,
       isRestricted: user.isRestricted,
       isFlagged: user.isFlagged,
-      wallets: {
-        main: user.wallets?.main ?? 0,
-      },
     },
   });
 });

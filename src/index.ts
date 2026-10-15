@@ -41,16 +41,7 @@ app.use(
   })
 );
 
-app.use(
-  express.json({
-    limit: "10mb",
-    verify: (req: Request, _res: Response, buf: Buffer) => {
-      // `req.rawBody` is attached for Paystack webhook signature verification.
-      // Use a cast to avoid ts-node-dev type-resolution issues.
-      (req as any).rawBody = buf;
-    },
-  })
-);
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.get("/", (_req: Request, res: Response) => {

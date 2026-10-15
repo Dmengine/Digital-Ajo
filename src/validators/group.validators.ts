@@ -21,3 +21,7 @@ export const postGroupMessageSchema = Joi.object({
 export const addGroupMemberSchema = Joi.object({
   username: Joi.string().trim().lowercase().min(3).max(32).required(),
 });
+
+export const markPaidSchema = Joi.object({
+  reference: Joi.string().trim().max(120).allow("").optional(),
+});

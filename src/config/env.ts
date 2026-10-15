@@ -43,21 +43,8 @@ export const env = {
   port: Number(process.env.PORT) || 3001,
   mongoUri: () => required("MONGO_URI"),
   jwtSecret: () => required("JWT_SECRET"),
-  /**
-   * Generic webhook secret for MVP (deposit events, etc).
-   * SECURITY: webhook endpoints must be signed to prevent spoofing.
-   */
-  webhookSecret: () => {
-    const v = process.env.WEBHOOK_SECRET?.trim();
-    if (v) return v;
-    const fallback = process.env.PAYSTACK_WEBHOOK_SECRET?.trim();
-    if (fallback) return fallback;
-    return paystackKey();
-  },
-  /** Required when calling Paystack-backed wallet endpoints */
+  /** Paystack secret key — used only for the bank account resolve endpoint. */
   paystackSecret: () => paystackKey(),
-  paystackWebhookSecret: () =>
-    process.env.PAYSTACK_WEBHOOK_SECRET?.trim() || paystackKey(),
   twilioAccountSid: () => required("TWILIO_ACCOUNT_SID"),
   twilioAuthToken: () => required("TWILIO_AUTH_TOKEN"),
   twilioFromNumber: () => required("TWILIO_FROM_NUMBER"),
@@ -76,7 +63,6 @@ export const env = {
         process.env.CLOUDINARY_API_KEY?.trim() &&
         process.env.CLOUDINARY_API_SECRET?.trim()
     ),
-  mobileAppReturnUrl: () => process.env.MOBILE_APP_RETURN_URL?.trim() || "contripay://wallet",
   redisUrl: () => process.env.REDIS_URL?.trim() || null,
   corsOrigin: resolveCorsOrigin(),
 };

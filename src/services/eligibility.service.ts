@@ -53,6 +53,3 @@ export const canTakeEarlyPayoutPosition = (
   }
   return { ok: true };
 };
-
-export const bufferRequiredForGroupType = (groupType: GroupRiskType): boolean =>
-  groupType === "medium" || groupType === "high" || groupType === "premium";

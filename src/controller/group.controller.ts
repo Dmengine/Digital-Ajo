@@ -7,13 +7,17 @@ import type { GroupRiskType } from "../models/groupAjo.model";
 import { ContributionModel } from "../models/contribution.model";
 import { GroupMessageModel } from "../models/groupMessage.model";
 import { notify } from "../services/notification.service";
-import {
-  assessGroupEligibility,
-  bufferRequiredForGroupType,
-  canTakeEarlyPayoutPosition,
-} from "../services/eligibility.service";
+import { assessGroupEligibility, canTakeEarlyPayoutPosition } from "../services/eligibility.service";
 import { createGroupChatMessage } from "../services/groupChat.service";
 import { requireGroupMember } from "../services/groupMember.service";
+import {
+  confirmContributionReceived,
+  disputeContribution,
+  getCurrentRound,
+  isMembershipOpen,
+  markContributionPaid,
+  membershipLocksAt,
+} from "../services/round.service";
 import { HttpError } from "../errors/HttpError";
 import { asyncHandler } from "../middleware/asyncHandler";
 
@@ -66,12 +70,11 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
   // MVP: creator is always the first member (order 1). `members` in the request are additional members.
   const additionalUsers = users.filter((u) => u._id.toString() !== creatorId);
   const roster = [
-    { user: creator._id, order: 1, hasReceived: false, bufferHeld: 0 },
+    { user: creator._id, order: 1, hasReceived: false },
     ...additionalUsers.map((u, i) => ({
       user: u._id,
       order: i + 2,
       hasReceived: false,
-      bufferHeld: 0,
     })),
   ];
 
@@ -85,7 +88,6 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const inviteCode = generateInviteCode();
-  const bufferRequired = bufferRequiredForGroupType(groupType);
 
   const newGroup = await GroupAjoModel.create({
     name,
@@ -97,7 +99,6 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
     createdBy: creatorId,
     inviteCode,
     status: "open",
-    bufferRequired,
     members: roster,
     currentRound: 1,
     isCompleted: false,
@@ -207,6 +208,8 @@ export const joinGroupByInvite = asyncHandler(async (req: Request, res: Response
   const group = await GroupAjoModel.findOne({ inviteCode, status: "open" });
   if (!group) throw new HttpError(404, "Group not found or not accepting members");
 
+  if (!isMembershipOpen(group)) throw new HttpError(400, "This group is no longer accepting members");
+
   const already = group.members.some((m) => m.user.toString() === userId);
   if (already) throw new HttpError(400, "Already a member of this group");
 
@@ -229,7 +232,6 @@ export const joinGroupByInvite = asyncHandler(async (req: Request, res: Response
     user: user._id,
     order: nextOrder,
     hasReceived: false,
-    bufferHeld: 0,
   });
   await group.save();
 
@@ -250,23 +252,23 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
   const oid = new mongoose.Types.ObjectId(groupId);
   const statsAgg = await ContributionModel.aggregate<{
     _id: mongoose.Types.ObjectId;
-    completedCount: number;
-    failedCount: number;
+    confirmedCount: number;
+    markedPaidCount: number;
     unpaidCount: number;
     defaultedCount: number;
     pendingCount: number;
-    totalPaid: number;
+    totalConfirmed: number;
   }>([
     { $match: { groupAjo: oid } },
     {
       $group: {
         _id: "$user",
-        completedCount: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
-        failedCount: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
+        confirmedCount: { $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] } },
+        markedPaidCount: { $sum: { $cond: [{ $eq: ["$status", "marked_paid"] }, 1, 0] } },
         unpaidCount: { $sum: { $cond: [{ $eq: ["$status", "unpaid"] }, 1, 0] } },
         defaultedCount: { $sum: { $cond: [{ $eq: ["$status", "defaulted"] }, 1, 0] } },
         pendingCount: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
-        totalPaid: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, "$amount", 0] } },
+        totalConfirmed: { $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, "$amount", 0] } },
       },
     },
   ]);
@@ -288,18 +290,17 @@ export const getGroupDashboard = asyncHandler(async (req: Request, res: Response
       username: u?.username,
       order: m.order,
       hasReceived: m.hasReceived,
-      bufferHeld: m.bufferHeld,
-      completedContributions: st?.completedCount ?? 0,
-      failedContributions: st?.failedCount ?? 0,
+      confirmedContributions: st?.confirmedCount ?? 0,
+      markedPaidContributions: st?.markedPaidCount ?? 0,
       unpaidContributions: st?.unpaidCount ?? 0,
       defaultedContributions: st?.defaultedCount ?? 0,
       pendingContributions: st?.pendingCount ?? 0,
-      totalPaid: st?.totalPaid ?? 0,
+      totalConfirmedPaid: st?.totalConfirmed ?? 0,
     };
   });
 
   const defaulters = members.filter(
-    (r) => r.failedContributions > 0 || r.unpaidContributions > 0 || r.defaultedContributions > 0
+    (r) => r.unpaidContributions > 0 || r.defaultedContributions > 0
   );
 
   res.status(200).json({
@@ -363,6 +364,9 @@ export const addGroupMember = asyncHandler(async (req: Request, res: Response) =
   const adminId = (req as any).userId as string;
   const { group, isAdmin } = await requireGroupMember(groupId, adminId);
   if (!isAdmin) throw new HttpError(403, "Only the group admin can add members");
+  if (!isMembershipOpen(group)) {
+    throw new HttpError(400, `Members can only be added before ${membershipLocksAt(group).toISOString()}`);
+  }
 
   const { username } = req.body as { username: string };
   const newUser = await UserModel.findOne({ username: username.trim().toLowerCase() });
@@ -388,7 +392,6 @@ export const addGroupMember = asyncHandler(async (req: Request, res: Response) =
     user: newUser._id,
     order: nextOrder,
     hasReceived: false,
-    bufferHeld: 0,
   });
   await group.save();
 
@@ -438,4 +441,25 @@ export const removeGroupMember = asyncHandler(async (req: Request, res: Response
     message: "Member removed",
     group: updated,
   });
+});
+
+export const getCurrentRoundHandler = asyncHandler(async (req: Request, res: Response) => {
+  const data = await getCurrentRound(req.params.id, (req as any).userId as string);
+  res.status(200).json({ success: true, ...data });
+});
+
+export const markRoundPaid = asyncHandler(async (req: Request, res: Response) => {
+  const { reference } = req.body as { reference?: string };
+  const contribution = await markContributionPaid(req.params.id, (req as any).userId as string, reference);
+  res.status(200).json({ success: true, message: "Marked as paid. Waiting for the recipient to confirm.", contribution });
+});
+
+export const confirmRoundPayment = asyncHandler(async (req: Request, res: Response) => {
+  const result = await confirmContributionReceived(req.params.id, (req as any).userId as string, req.params.userId);
+  res.status(200).json({ success: true, message: "Payment confirmed", ...result });
+});
+
+export const disputeRoundPayment = asyncHandler(async (req: Request, res: Response) => {
+  const contribution = await disputeContribution(req.params.id, (req as any).userId as string, req.params.userId);
+  res.status(200).json({ success: true, message: "Marked as not received. The payer has been notified.", contribution });
 });

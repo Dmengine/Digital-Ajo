@@ -7,6 +7,7 @@ export const getPaystack = (): AxiosInstance => {
   if (!client) {
     client = axios.create({
       baseURL: "https://api.paystack.co",
+      timeout: 15_000,
       headers: {
         Authorization: `Bearer ${env.paystackSecret()}`,
         "Content-Type": "application/json",

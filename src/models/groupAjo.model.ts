@@ -8,8 +8,9 @@ const memberSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     order: { type: Number, required: true },
+    /** Payout position: the member with order N receives in round N. */
     hasReceived: { type: Boolean, default: false },
-    bufferHeld: { type: Number, default: 0, min: 0 },
+    receivedAt: { type: Date },
   },
   { _id: false }
 );
@@ -45,7 +46,6 @@ const groupAjoSchema = new mongoose.Schema(
       enum: ["open", "active", "completed", "cancelled"] satisfies GroupStatus[],
       default: "open",
     },
-    bufferRequired: { type: Boolean, default: false },
     members: { type: [memberSchema], default: [] },
     joinRequests: { type: [joinRequestSchema], default: [] },
     currentRound: { type: Number, default: 1, min: 1 },
@@ -60,6 +60,7 @@ const groupAjoSchema = new mongoose.Schema(
     reminder48hSentAt: { type: Date },
     reminder24hSentAt: { type: Date },
     isCompleted: { type: Boolean, default: false },
+    completedAt: { type: Date },
   },
   { timestamps: true }
 );

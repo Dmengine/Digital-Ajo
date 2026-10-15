@@ -3,11 +3,11 @@ import { GroupAjoModel } from "../models/groupAjo.model";
 import type { GroupRiskType } from "../models/groupAjo.model";
 import { HttpError } from "../errors/HttpError";
 
-export type GroupAjoDoc = mongoose.Document & {
+export type GroupAjoDoc = mongoose.Document<mongoose.Types.ObjectId> & {
   name: string;
   createdBy: mongoose.Types.ObjectId;
   groupType: GroupRiskType;
-  members: Array<{ user: mongoose.Types.ObjectId; order: number; hasReceived: boolean; bufferHeld: number }>;
+  members: Array<{ user: mongoose.Types.ObjectId; order: number; hasReceived: boolean }>;
   currentRound: number;
   roundStatus: "active" | "paused" | "completed";
   roundDueAt?: Date;
@@ -15,6 +15,7 @@ export type GroupAjoDoc = mongoose.Document & {
   contributionAmount: number;
   frequency: string;
   status: string;
+  isCompleted?: boolean;
   startDate: Date;
 };
 
