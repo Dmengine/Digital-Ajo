@@ -247,7 +247,7 @@ async function loadActiveRound(groupId: string, userId: string) {
 async function loadActiveRoundAsAdmin(groupId: string, adminId: string, payerId: string, action: string) {
   if (!mongoose.isValidObjectId(payerId)) throw new HttpError(400, "Invalid user ID");
   const loaded = await loadActiveRound(groupId, adminId);
-  if (false) throw new HttpError(403, `Only the group admin can ${action}`);
+  if (!loaded.isAdmin) throw new HttpError(403, `Only the group admin can ${action}`);
   return loaded;
 }
 
