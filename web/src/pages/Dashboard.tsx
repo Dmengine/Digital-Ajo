@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Plus, ShieldCheck, Wallet, Users, Zap } from "lucide-react";
+import { Plus, ShieldCheck, Users, Zap, Link2 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useQuery } from "@tanstack/react-query";
 import { me as fetchMe } from "../api/auth.api";
 import { browseGroups } from "../api/groups.api";
-import { formatNaira } from "../utils/currency";
+import { NonCustodialNotice } from "../components/NonCustodialNotice";
 
 function Card({
   title,
@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   const basicKycCompleted = meData?.user?.basicKycCompleted ?? user?.basicKycCompleted ?? false;
   const kycTier = meData?.user?.kycTier ?? user?.kycTier ?? 1;
-  const walletBalance = meData?.user?.wallets?.main ?? user?.wallets?.main ?? 0;
+  const bankConfirmed = meData?.user?.bankAccount?.confirmed ?? false;
   const activeGroups = groupsData?.groups?.length ?? 0;
 
   return (
@@ -71,58 +71,39 @@ export default function Dashboard() {
         <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#ab73ff]/10 blur-[60px] rounded-full"></div>
         <div className="relative flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-[#cdc2d7] font-semibold">The Sovereign Vault</div>
+            <div className="text-xs uppercase tracking-[0.2em] text-[#cdc2d7] font-semibold">Your ajo groups</div>
             <h2 className="mt-2 text-4xl font-headline font-extrabold text-[#d6baff] tracking-tight">
               Good Morning, {user?.name ?? "Member"}
             </h2>
-            <p className="mt-1 text-[#cdc2d7] text-sm">Welcome back to your community savings hub.</p>
+            <p className="mt-1 text-[#cdc2d7] text-sm">See whose turn it is and what you owe this round.</p>
           </div>
         </div>
       </section>
 
-      {/* Main Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card title="Main Wallet Balance" value={`₦${formatNaira(walletBalance)}`} icon={<Wallet size={24} />} accent="primary">
-          <div className="mt-4 space-y-2">
-            <div className="flex gap-3">
-              <Link
-                to="/wallet"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-bold text-sm hover:opacity-90 transition-opacity"
-              >
-                <Plus size={16} />
-                Deposit
-              </Link>
-              <Link
-                to="/wallet"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1d2023] border border-[#968da0]/30 text-[#d6baff] font-bold text-sm hover:bg-[#272a2e] transition-colors"
-              >
-                Withdraw
-              </Link>
-            </div>
-            <p className="text-xs text-[#cdc2d7] mt-3">
-              Deposit or withdraw directly from your account via Paystack.
-            </p>
-          </div>
-        </Card>
+      <NonCustodialNotice />
 
+      {/* Main Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
         <Card
           title="KYC Status"
-          value={basicKycCompleted ? `Tier ${kycTier}` : "Not Verified"}
+          value={basicKycCompleted ? `Tier ${kycTier}` : "Not submitted"}
           icon={<ShieldCheck size={24} />}
           accent="primary"
         >
           <div className="mt-4 space-y-3">
             <p className="text-xs text-[#cdc2d7]">
               {basicKycCompleted
-                ? "Your identity is verified. You can create and join groups."
-                : "Complete Tier 1 KYC to unlock group features."}
+                ? bankConfirmed
+                  ? "Details submitted and bank account confirmed. You can create and join groups."
+                  : "Details submitted. You can create and join groups."
+                : "Submit your details and payout bank account to create or join groups."}
             </p>
             {!basicKycCompleted && (
               <Link
                 to="/profile"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-linear-to-br from-[#40e56c] to-[#02c953] text-[#003912] font-bold text-sm hover:opacity-90 transition-opacity"
               >
-                Complete KYC
+                Add details
               </Link>
             )}
           </div>
@@ -172,12 +153,12 @@ export default function Dashboard() {
           </Link>
 
           <Link
-            to="/wallet"
+            to="/join"
             className="group p-5 rounded-lg bg-[#191c1f] border border-[#4b4454]/30 hover:bg-[#272a2e] transition-colors"
           >
-            <Wallet size={20} className="text-[#40e56c] mb-3" />
-            <span className="font-semibold text-[#e1e2e7] text-sm block">Manage Wallet</span>
-            <span className="text-xs text-[#cdc2d7] mt-1">Deposit, withdraw, verify deposits.</span>
+            <Link2 size={20} className="text-[#40e56c] mb-3" />
+            <span className="font-semibold text-[#e1e2e7] text-sm block">Join with Invite</span>
+            <span className="text-xs text-[#cdc2d7] mt-1">Use an invite code from a group admin.</span>
           </Link>
         </div>
       </section>

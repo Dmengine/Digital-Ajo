@@ -9,8 +9,8 @@ import GroupsBrowse from "./pages/GroupsBrowse";
 import GroupDetail from "./pages/GroupDetail";
 import CreateGroup from "./pages/CreateGroup";
 import Join from "./pages/Join";
-import Wallet from "./pages/Wallet";
 import Profile from "./pages/Profile";
+import Privacy from "./pages/Privacy";
 
 export default function App() {
   return (
@@ -21,6 +21,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -28,7 +29,6 @@ export default function App() {
             <Route path="/groups/create" element={<CreateGroup />} />
             <Route path="/groups/:id" element={<GroupDetail />} />
             <Route path="/join" element={<Join />} />
-            <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 

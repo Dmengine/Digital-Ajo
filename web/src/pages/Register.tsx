@@ -8,6 +8,7 @@ import { register } from "../api/auth.api";
 import { useAuthStore } from "../store/authStore";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { UserPlus } from "lucide-react";
+import { NonCustodialNotice } from "../components/NonCustodialNotice";
 
 const registerSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -20,6 +21,9 @@ const registerSchema = z.object({
     .max(32)
     .regex(/^[a-z0-9_]+$/i, "Use letters, numbers and underscore"),
   password: z.string().min(8).max(128),
+  consentAccepted: z.boolean().refine((v) => v === true, {
+    message: "You must accept the privacy notice to create an account",
+  }),
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
@@ -42,7 +46,7 @@ export default function Register() {
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", phone: "", username: "", password: "" },
+    defaultValues: { name: "", email: "", phone: "", username: "", password: "", consentAccepted: false },
     mode: "onChange",
   });
 
@@ -54,6 +58,7 @@ export default function Register() {
         phone: values.phone,
         username: values.username.toLowerCase(),
         password: values.password,
+        consentAccepted: values.consentAccepted,
       }),
     onSuccess: (res) => {
       setAuth(res.token, res.user);
@@ -79,9 +84,11 @@ export default function Register() {
             Join Now
           </h1>
           <p className="mt-2 text-[#cdc2d7] text-sm">
-            Create your account and start contributing.
+            Create your account and organise your ajo group.
           </p>
         </div>
+
+        <NonCustodialNotice className="mb-6" />
 
         {/* Register Card */}
         <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-8 shadow-2xl">
@@ -146,6 +153,28 @@ export default function Register() {
                   Password strength: {["Weak", "Fair", "Good", "Strong"][s] || "Very Weak"}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-start gap-3 text-sm text-[#cdc2d7]">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 accent-[#40e56c]"
+                  {...form.register("consentAccepted")}
+                />
+                <span>
+                  I have read the{" "}
+                  <Link to="/privacy" target="_blank" className="text-[#40e56c] font-bold hover:underline">
+                    privacy notice
+                  </Link>{" "}
+                  and agree to ContriPay processing my personal data as described there.
+                </span>
+              </label>
+              {form.formState.errors.consentAccepted ? (
+                <div className="text-xs text-[#ffb4ab] font-semibold">
+                  {String(form.formState.errors.consentAccepted.message)}
+                </div>
+              ) : null}
             </div>
 
             {mut.isError ? (

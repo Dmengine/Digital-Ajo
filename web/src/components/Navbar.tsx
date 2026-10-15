@@ -21,7 +21,6 @@ export function Navbar() {
     () => [
       { to: "/dashboard", label: "Dashboard" },
       { to: "/groups/browse", label: "Circles" },
-      { to: "/wallet", label: "Wallet" },
       { to: "/profile", label: "Profile" },
     ],
     []

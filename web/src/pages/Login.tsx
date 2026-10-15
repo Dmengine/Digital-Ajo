@@ -46,10 +46,10 @@ export default function Login() {
             <Shield size={28} className="text-[#111417]" />
           </div>
           <h1 className="font-headline text-4xl font-extrabold text-[#d6baff] tracking-tight">
-            Sovereign Vault
+            Welcome back
           </h1>
           <p className="mt-2 text-[#cdc2d7] text-sm uppercase tracking-[0.2em] font-semibold">
-            Secure access credentials
+            Sign in to your ajo groups
           </p>
         </div>
 
@@ -59,11 +59,11 @@ export default function Login() {
             {/* Email Field */}
             <div className="space-y-2">
               <label className="block text-xs uppercase tracking-wider font-bold text-[#cdc2d7] ml-1">
-                Vault ID / Email
+                Email or username
               </label>
               <input
                 className="w-full bg-[#323538] border border-[#4b4454]/30 rounded-lg py-4 px-5 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
-                placeholder="name@vault.com"
+                placeholder="name@example.com"
                 {...form.register("emailOrUsername")}
               />
               {form.formState.errors.emailOrUsername ? (

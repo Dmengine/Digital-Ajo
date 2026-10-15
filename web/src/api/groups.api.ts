@@ -62,13 +62,12 @@ export type GroupDashboardMember = {
   username?: string;
   order: number;
   hasReceived: boolean;
-  bufferHeld: number;
-  completedContributions: number;
-  failedContributions: number;
+  confirmedContributions: number;
+  markedPaidContributions: number;
   unpaidContributions: number;
   defaultedContributions: number;
   pendingContributions: number;
-  totalPaid: number;
+  totalConfirmedPaid: number;
 };
 
 export async function getGroupDashboard(id: string): Promise<{
@@ -134,3 +133,74 @@ export async function removeGroupMember(
   return data;
 }
 
+
+/** pending -> marked_paid (payer says sent) -> confirmed (recipient received). unpaid/defaulted during grace. */
+export type ContributionStatus = "pending" | "marked_paid" | "confirmed" | "unpaid" | "defaulted";
+
+export type RoundPayment = {
+  userId: string;
+  name: string | null;
+  username: string | null;
+  status: ContributionStatus;
+  markedPaidAt: string | null;
+  confirmedAt: string | null;
+  disputedAt: string | null;
+  /** Only visible to the payer themselves and the round's recipient. */
+  payerReference: string | null;
+};
+
+export type CurrentRound = {
+  number: number;
+  status: GroupRoundStatus;
+  amount: number;
+  dueAt: string | null;
+  graceEndsAt: string | null;
+  isRecipient: boolean;
+  recipient: {
+    userId: string;
+    name: string | null;
+    username: string | null;
+    bankAccount: {
+      accountNumber: string;
+      accountName: string | null;
+      bankName: string | null;
+      confirmed: boolean;
+    } | null;
+  };
+  payments: RoundPayment[];
+  myPayment: RoundPayment | null;
+};
+
+export type CurrentRoundResponse = {
+  success: boolean;
+  groupId: string;
+  groupName: string;
+  groupStatus: GroupStatus;
+  isAdmin: boolean;
+  totalRounds: number;
+  membershipLocksAt: string;
+  round: CurrentRound | null;
+};
+
+export async function getCurrentRound(id: string): Promise<CurrentRoundResponse> {
+  const { data } = await api.get(`/groups/${id}/rounds/current`);
+  return data;
+}
+
+export async function markRoundPaid(id: string, reference?: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post(`/groups/${id}/rounds/current/mark-paid`, { reference: reference?.trim() || undefined });
+  return data;
+}
+
+export async function confirmRoundPayment(
+  id: string,
+  payerId: string
+): Promise<{ success: boolean; message: string; roundSettled: boolean }> {
+  const { data } = await api.post(`/groups/${id}/rounds/current/confirm/${payerId}`);
+  return data;
+}
+
+export async function disputeRoundPayment(id: string, payerId: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post(`/groups/${id}/rounds/current/dispute/${payerId}`);
+  return data;
+}

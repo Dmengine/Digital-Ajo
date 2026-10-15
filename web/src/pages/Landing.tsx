@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Shield, Sparkles, Users, Wallet } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Bell, CalendarClock, HandCoins, Users } from "lucide-react";
+import { NonCustodialNotice } from "../components/NonCustodialNotice";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -13,17 +14,20 @@ export default function Landing() {
         <div className="relative grid gap-12 md:grid-cols-2 md:items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full bg-[#d6baff]/10 px-4 py-2 text-xs font-bold text-[#d6baff] uppercase tracking-wide border border-[#d6baff]/20">
-              <Sparkles size={14} /> Premium Rotating Savings for West Africa
+              <Users size={14} /> Ajo / Esusu, organised
             </div>
 
             <h1 className="font-headline text-4xl leading-tight tracking-tight text-[#d6baff] sm:text-5xl font-extrabold">
               Save Together,
               <br />
-              Win Together
+              Take Turns
             </h1>
             <p className="text-lg text-[#cdc2d7]">
-              ContriPay is a modern, wallet-first Ajo/Susu platform with tiered verification—built for trust.
+              ContriPay helps your ajo group stay organised: who receives each round, who has paid, and friendly
+              reminders before every due date.
             </p>
+
+            <NonCustodialNotice />
 
             <div className="flex flex-wrap gap-4 pt-2">
               <button
@@ -45,26 +49,28 @@ export default function Landing() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg bg-[#1d2023] border border-[#4b4454]/30 p-4">
                 <div className="flex items-center gap-3 text-[#40e56c]">
-                  <Wallet size={20} />
-                  <span className="text-sm font-bold uppercase tracking-wide">Wallet-First</span>
+                  <HandCoins size={20} />
+                  <span className="text-sm font-bold uppercase tracking-wide">Pay Each Other</span>
                 </div>
-                <div className="mt-3 text-sm text-[#968da0]">Contribute with Main Wallet logic.</div>
+                <div className="mt-3 text-sm text-[#968da0]">
+                  Each round, members send their contribution straight to the recipient's bank account.
+                </div>
               </div>
               <div className="rounded-lg bg-[#1d2023] border border-[#4b4454]/30 p-4">
                 <div className="flex items-center gap-3 text-[#d6baff]">
-                  <Shield size={20} />
-                  <span className="text-sm font-bold uppercase tracking-wide">Risk-Managed</span>
+                  <Bell size={20} />
+                  <span className="text-sm font-bold uppercase tracking-wide">Reminders</span>
                 </div>
-                <div className="mt-3 text-sm text-[#968da0]">Tiered KYC + buffer protection (MVP).</div>
+                <div className="mt-3 text-sm text-[#968da0]">Nudges 48 and 24 hours before each due date.</div>
               </div>
             </div>
             <div className="mt-4 rounded-lg bg-[#1d2023] border border-[#4b4454]/30 p-4">
               <div className="flex items-center gap-3 text-amber-400">
-                <Users size={20} />
-                <span className="text-sm font-bold uppercase tracking-wide">Trust via KYC</span>
+                <CalendarClock size={20} />
+                <span className="text-sm font-bold uppercase tracking-wide">Clear Turns</span>
               </div>
               <div className="mt-3 text-sm text-[#968da0]">
-                Complete Basic KYC to access groups securely.
+                Everyone can see whose turn it is and which payments the recipient has confirmed.
               </div>
             </div>
           </div>
@@ -73,9 +79,24 @@ export default function Landing() {
 
       <section className="grid gap-6 md:grid-cols-3">
         {[
-          { icon: Shield, title: "Security Buffer", desc: "Protect early payout recipients and reduce default risk.", color: "text-[#d6baff]" },
-          { icon: Sparkles, title: "Trust via KYC", desc: "Basic KYC is required for group access in MVP.", color: "text-[#40e56c]" },
-          { icon: Users, title: "Group Tiers", desc: "Low/Medium groups supported in MVP with Basic KYC access.", color: "text-amber-400" },
+          {
+            icon: Users,
+            title: "Save with people you trust",
+            desc: "Invite friends, family or colleagues. Only members can see a group.",
+            color: "text-[#d6baff]",
+          },
+          {
+            icon: HandCoins,
+            title: "Confirmed by the recipient",
+            desc: "Payers tap “I've paid”; the recipient confirms when the money arrives.",
+            color: "text-[#40e56c]",
+          },
+          {
+            icon: Bell,
+            title: "Reliability score",
+            desc: "Paying on time builds your score. Missed payments lower it.",
+            color: "text-amber-400",
+          },
         ].map((c) => (
           <div key={c.title} className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6 hover:bg-[#323538]/30 transition-all">
             <c.icon className={c.color} size={24} />
@@ -85,10 +106,14 @@ export default function Landing() {
         ))}
       </section>
 
-      <footer className="pt-8 text-center text-xs font-bold text-[#968da0] uppercase tracking-wide">
-        Built for trust. Powered by wallet-first contribution logic.
+      <footer className="space-y-2 pt-8 text-center text-xs text-[#968da0]">
+        <div className="font-bold uppercase tracking-wide">
+          A coordination and reminder tool for ajo groups. Money moves directly between members.
+        </div>
+        <Link to="/privacy" className="underline hover:text-[#d6baff]">
+          Privacy notice
+        </Link>
       </footer>
     </div>
   );
 }
-

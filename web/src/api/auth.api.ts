@@ -7,6 +7,7 @@ export type RegisterBody = {
   phone: string;
   username: string;
   password: string;
+  consentAccepted: boolean;
 };
 
 export type LoginBody = {
@@ -49,21 +50,38 @@ export async function me(): Promise<{
     isRestricted?: boolean;
     isFlagged?: boolean;
     profileImage?: string | null;
-    wallets?: { main?: number };
+    bankAccount?: BankAccountSummary | null;
+    identity?: { type: "bvn" | "nin" | null; last4: string; verified: false } | null;
   };
 }> {
   const { data } = await api.get("/auth/me");
   return data;
 }
 
+export type BankAccountSummary = {
+  accountNumber: string;
+  accountName: string | null;
+  bankName: string | null;
+  bankCode?: string | null;
+  confirmed: boolean;
+};
+
+export type Bank = { name: string; code: string };
+
+export async function listBanks(): Promise<{ success: boolean; banks: Bank[] }> {
+  const { data } = await api.get("/auth/banks");
+  return data;
+}
+
 export async function submitTier1Kyc(values: {
   bvnOrNin: string;
+  identityType?: "bvn" | "nin";
   dob: string;
   residentialAddress: string;
   accountNumber: string;
   bankName: string;
-  accountName: string;
-}): Promise<{ success: boolean; message: string }> {
+  bankCode: string;
+}): Promise<{ success: boolean; message: string; bankAccount: BankAccountSummary }> {
   const { data } = await api.post("/auth/kyc/tier1", values);
   return data;
 }

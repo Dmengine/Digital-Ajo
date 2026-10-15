@@ -14,9 +14,6 @@ export type PublicUser = {
   isRestricted?: boolean;
   isFlagged?: boolean;
   profileImage?: string | null;
-  wallets?: {
-    main?: number;
-  };
 };
 
 type AuthState = {

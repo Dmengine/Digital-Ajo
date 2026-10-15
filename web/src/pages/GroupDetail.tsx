@@ -12,6 +12,7 @@ import {
   type GroupChatMessage,
 } from "../api/groups.api";
 import { getSocketBaseUrl } from "../lib/socketBaseUrl";
+import { ThisRound } from "../components/ThisRound";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
 import { useAuthStore } from "../store/authStore";
 import { useEffect, useRef, useState } from "react";
@@ -251,6 +252,8 @@ export default function GroupDetail() {
           </div>
 
           <Tabs.Content value="dashboard" className="space-y-4 outline-none">
+            <ThisRound groupId={groupId} />
+
             {dashQ.isLoading ? (
               <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6 text-[#cdc2d7]">Loading dashboard...</div>
             ) : null}
@@ -265,11 +268,12 @@ export default function GroupDetail() {
                 <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
                   <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Member Overview</h2>
                   <p className="mt-2 text-sm text-[#968da0]">
-                    Round {dashQ.data.group.currentRound} · Totals from recorded contributions in this group.
+                    Round {dashQ.data.group.currentRound} · Payments members reported and recipients confirmed. Money moves
+                    directly between members, not through ContriPay.
                   </p>
                   {dashQ.data.group.roundStatus === "paused" ? (
                     <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-                      This round is paused because at least one contribution is unresolved.
+                      This round is paused because at least one payment hasn't been confirmed by the recipient.
                       {dashQ.data.group.roundGraceEndsAt
                         ? ` Grace period ends ${new Date(dashQ.data.group.roundGraceEndsAt).toLocaleString()}.`
                         : ""}
@@ -281,13 +285,13 @@ export default function GroupDetail() {
                         <tr className="border-b border-[#4b4454]/30 text-xs font-bold uppercase text-[#968da0] tracking-wider">
                           <th className="py-3 pr-3">Member</th>
                           <th className="py-3 pr-3">Order</th>
-                          <th className="py-3 pr-3">Paid in</th>
-                          <th className="py-3 pr-3">Completed</th>
-                          <th className="py-3 pr-3">Pending</th>
-                          <th className="py-3 pr-3">Failed</th>
+                          <th className="py-3 pr-3">Confirmed sent</th>
+                          <th className="py-3 pr-3">Confirmed</th>
+                          <th className="py-3 pr-3">Awaiting confirmation</th>
+                          <th className="py-3 pr-3">Not paid yet</th>
                           <th className="py-3 pr-3">Unpaid</th>
                           <th className="py-3 pr-3">Defaulted</th>
-                          <th className="py-3">Payout</th>
+                          <th className="py-3">Their turn</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -298,10 +302,10 @@ export default function GroupDetail() {
                               <div className="text-xs text-[#968da0]">@{m.username ?? "—"}</div>
                             </td>
                             <td className="py-3 pr-3">#{m.order}</td>
-                            <td className="py-3 pr-3">₦{m.totalPaid.toLocaleString()}</td>
-                            <td className="py-3 pr-3">{m.completedContributions}</td>
+                            <td className="py-3 pr-3">₦{m.totalConfirmedPaid.toLocaleString()}</td>
+                            <td className="py-3 pr-3">{m.confirmedContributions}</td>
+                            <td className="py-3 pr-3">{m.markedPaidContributions}</td>
                             <td className="py-3 pr-3">{m.pendingContributions}</td>
-                            <td className="py-3 pr-3">{m.failedContributions}</td>
                             <td className="py-3 pr-3">{m.unpaidContributions}</td>
                             <td className="py-3 pr-3">{m.defaultedContributions}</td>
                             <td className="py-3">
@@ -325,7 +329,7 @@ export default function GroupDetail() {
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6">
                   <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Defaulters</h2>
                   <p className="mt-2 text-sm text-[#968da0]">
-                    Members with failed, unpaid, or defaulted contribution records in this group.
+                    Members with unpaid or defaulted contributions in this group.
                   </p>
                   {dashQ.data.defaulters.length === 0 ? (
                     <div className="mt-4 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4 text-sm text-[#968da0]">
@@ -341,7 +345,7 @@ export default function GroupDetail() {
                           <div>
                             <div className="font-bold text-[#e1e2e7]">{d.name ?? "Member"}</div>
                             <div className="text-xs text-[#968da0]">
-                              @{d.username ?? "—"} · failed: {d.failedContributions} · unpaid: {d.unpaidContributions} · defaulted: {d.defaultedContributions}
+                              @{d.username ?? "—"} · unpaid: {d.unpaidContributions} · defaulted: {d.defaultedContributions}
                             </div>
                           </div>
                         </li>

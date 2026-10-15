@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 import {
+  listBanks,
   me as fetchMe,
   submitTier1Kyc,
   uploadAvatar,
@@ -36,17 +37,29 @@ export default function Profile() {
     if (meData?.user && token) setAuth(token, meData.user as any);
   }, [meData, token, setAuth]);
 
-  const kycVerified = meData?.user?.basicKycCompleted ?? user?.basicKycCompleted ?? false;
+  const detailsSubmitted = meData?.user?.basicKycCompleted ?? user?.basicKycCompleted ?? false;
+  const bankAccount = meData?.user?.bankAccount ?? null;
+  const identity = meData?.user?.identity ?? null;
+  const [editingDetails, setEditingDetails] = useState(false);
+  const showKycForm = !detailsSubmitted || editingDetails;
+
+  const { data: banksData, isLoading: banksLoading, isError: banksError } = useQuery({
+    queryKey: ["auth", "banks"],
+    queryFn: listBanks,
+    enabled: !!token && showKycForm,
+    staleTime: 60 * 60 * 1000,
+  });
+  const banks = banksData?.banks ?? [];
   const kycTier = meData?.user?.kycTier ?? user?.kycTier ?? 1;
   const profileImage = meData?.user?.profileImage ?? user?.profileImage ?? null;
 
   const kycSchema = z.object({
-    bvnOrNin: z.string().trim().min(8).max(20),
-    dob: z.string().min(1),
+    identityType: z.enum(["bvn", "nin"]),
+    bvnOrNin: z.string().trim().regex(/^\d{11}$/, "Must be 11 digits"),
+    dob: z.string().min(1, "Required"),
     residentialAddress: z.string().trim().min(5).max(500),
-    accountNumber: z.string().trim().min(4).max(20),
-    bankName: z.string().trim().min(2).max(120),
-    accountName: z.string().trim().min(2).max(120),
+    accountNumber: z.string().trim().regex(/^\d{10}$/, "Account number must be 10 digits"),
+    bankCode: z.string().trim().min(3, "Select your bank"),
   });
 
   type KycValues = z.infer<typeof kycSchema>;
@@ -54,19 +67,25 @@ export default function Profile() {
   const form = useForm<KycValues>({
     resolver: zodResolver(kycSchema),
     defaultValues: {
+      identityType: "bvn",
       bvnOrNin: "",
       dob: "",
       residentialAddress: "",
       accountNumber: "",
-      bankName: "",
-      accountName: "",
+      bankCode: "",
     },
     mode: "onChange",
   });
 
   const kycMut = useMutation({
-    mutationFn: (values: KycValues) => submitTier1Kyc(values),
+    mutationFn: (values: KycValues) =>
+      submitTier1Kyc({
+        ...values,
+        bankName: banks.find((b) => b.code === values.bankCode)?.name ?? values.bankCode,
+      }),
     onSuccess: async () => {
+      setEditingDetails(false);
+      form.reset();
       await refetch();
     },
   });
@@ -123,12 +142,12 @@ export default function Profile() {
             <div
               className={
                 "rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wide " +
-                (kycVerified
+                (detailsSubmitted
                   ? "bg-[#40e56c]/20 text-[#40e56c] border border-[#40e56c]/40"
                   : "bg-amber-500/20 text-amber-300 border border-amber-500/40")
               }
             >
-              Basic KYC: {kycVerified ? `Tier ${kycTier}` : "Required"}
+              Basic KYC: {detailsSubmitted ? `Tier ${kycTier} · details submitted` : "Required"}
             </div>
           </div>
 
@@ -148,30 +167,68 @@ export default function Profile() {
             </div>
 
             <div className="rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4">
-              <div className="text-sm font-bold text-[#e1e2e7] uppercase tracking-wide">KYC & Trust</div>
+              <div className="text-sm font-bold text-[#e1e2e7] uppercase tracking-wide">Details & payout account</div>
               <div className="mt-3 text-sm text-[#968da0]">
-                Tier 1 KYC is required for group participation and risk controls.
+                Needed to create or join groups. When it's your turn, other members pay directly into this bank
+                account. ContriPay never receives or holds the money.
               </div>
 
-              {!kycVerified ? (
+              {detailsSubmitted ? (
+                <div className="mt-4 space-y-2 text-sm text-[#cdc2d7]">
+                  <div>
+                    <span className="font-bold text-[#e1e2e7]">{identity?.type ? identity.type.toUpperCase() : "BVN/NIN"}:</span>
+                    <span className="ml-2">
+                      {identity?.last4 ? `•••••••${identity.last4}` : "—"} · details submitted (not verified)
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#e1e2e7]">Payout account:</span>
+                    <span className="ml-2">
+                      {bankAccount
+                        ? `${bankAccount.accountName ?? "—"} · ${bankAccount.bankName ?? ""} · ${bankAccount.accountNumber}`
+                        : "Not added"}
+                    </span>
+                  </div>
+                  {bankAccount?.confirmed ? (
+                    <div className="inline-flex rounded-full bg-[#40e56c]/15 px-3 py-1 text-xs font-bold text-[#40e56c]">
+                      Bank account confirmed
+                    </div>
+                  ) : (
+                    <div className="inline-flex rounded-full bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-300">
+                      Bank account not confirmed. Update your details.
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {showKycForm ? (
                 <form
                   className="mt-4 space-y-3"
                   onSubmit={form.handleSubmit((values) => kycMut.mutate(values))}
                 >
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#968da0] uppercase tracking-wide">ID type</label>
+                    <select
+                      className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] outline-none focus:ring-2 focus:ring-[#d6baff]/40"
+                      {...form.register("identityType")}
+                    >
+                      <option value="bvn">BVN</option>
+                      <option value="nin">NIN</option>
+                    </select>
+                  </div>
                   {(
                     [
-                      ["bvnOrNin", "BVN/NIN", "text"],
+                      ["bvnOrNin", "BVN/NIN (11 digits)", "text"],
                       ["dob", "Date of Birth", "date"],
                       ["residentialAddress", "Residential Address", "text"],
-                      ["accountNumber", "Bank Account Number", "text"],
-                      ["bankName", "Bank Name", "text"],
-                      ["accountName", "Bank Account Name", "text"],
+                      ["accountNumber", "Bank Account Number (10 digits)", "text"],
                     ] as const
                   ).map(([key, label, type]) => (
                     <div key={key} className="space-y-2">
                       <label className="text-xs font-bold text-[#968da0] uppercase tracking-wide">{label}</label>
                       <input
                         type={type}
+                        inputMode={key === "bvnOrNin" || key === "accountNumber" ? "numeric" : undefined}
                         className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] placeholder:text-[#968da0] outline-none focus:ring-2 focus:ring-[#d6baff]/40 transition-all"
                         {...form.register(key)}
                       />
@@ -181,28 +238,73 @@ export default function Profile() {
                     </div>
                   ))}
 
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[#968da0] uppercase tracking-wide">Bank</label>
+                    <select
+                      className="w-full rounded-lg border border-[#4b4454]/30 bg-[#323538] px-4 py-2 text-[#e1e2e7] outline-none focus:ring-2 focus:ring-[#d6baff]/40"
+                      disabled={banksLoading}
+                      {...form.register("bankCode")}
+                    >
+                      <option value="">{banksLoading ? "Loading banks..." : "Select your bank"}</option>
+                      {banks.map((b) => (
+                        <option key={`${b.code}-${b.name}`} value={b.code}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                    {banksError ? (
+                      <div className="text-xs text-[#ffb4ab] font-bold">Couldn't load the bank list. Refresh to try again.</div>
+                    ) : null}
+                    {form.formState.errors.bankCode ? (
+                      <div className="text-xs text-[#ffb4ab] font-bold">{form.formState.errors.bankCode.message}</div>
+                    ) : null}
+                  </div>
+
+                  <div className="text-xs text-[#968da0]">
+                    We check the account name with your bank. Your BVN/NIN is not verified; we keep only its last 4
+                    digits.
+                  </div>
+
                   {kycMut.isError ? (
                     <div className="rounded-lg border border-[#ffb4ab]/20 bg-[#ffb4ab]/10 px-4 py-3 text-sm text-[#ffb4ab] font-bold">
                       {getAxiosErrorMessage(kycMut.error)}
                     </div>
                   ) : null}
 
-                  <button
-                    disabled={kycMut.isPending}
-                    className="w-full rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-6 py-3 text-sm font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_8px_24px_rgba(214,186,255,0.25)]"
-                    type="submit"
-                  >
-                    {kycMut.isPending ? "Submitting..." : "Submit Tier 1 KYC"}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      disabled={kycMut.isPending}
+                      className="flex-1 rounded-lg bg-linear-to-br from-[#d6baff] to-[#ab73ff] px-6 py-3 text-sm font-bold text-[#111417] uppercase tracking-wide hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_8px_24px_rgba(214,186,255,0.25)]"
+                      type="submit"
+                    >
+                      {kycMut.isPending ? "Checking bank account..." : "Submit details"}
+                    </button>
+                    {editingDetails ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditingDetails(false)}
+                        className="rounded-lg border border-[#4b4454]/40 px-4 py-3 text-sm font-bold text-[#cdc2d7]"
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
+                  </div>
                 </form>
               ) : (
-                <div className="mt-4">
+                <div className="mt-4 flex flex-wrap gap-3">
                   <Link
                     to="/groups/create"
                     className="inline-flex items-center rounded-lg bg-[#40e56c] px-6 py-2 text-sm font-bold text-[#003912] uppercase tracking-wide hover:opacity-90 transition-all"
                   >
                     Create a Group Now
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDetails(true)}
+                    className="rounded-lg border border-[#4b4454]/40 px-4 py-2 text-sm font-bold text-[#cdc2d7] hover:bg-[#4b4454]/20"
+                  >
+                    Update details
+                  </button>
                 </div>
               )}
             </div>
