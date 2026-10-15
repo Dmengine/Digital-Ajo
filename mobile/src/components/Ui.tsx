@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   background: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: "hidden",
   },
   orb: {
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(64,229,108,0.10)",
   },
   grid: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     opacity: 0.08,
     backgroundColor: "transparent",
     borderTopWidth: 0.5,
