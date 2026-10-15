@@ -4,8 +4,8 @@ ContriPay is a coordination and reminder tool for ajo / esusu (rotating savings)
 
 **ContriPay does not hold your money. Contributions are paid directly between group members.**
 The platform never collects, stores or transfers funds: there is no wallet, no deposit and no
-payout from ContriPay. It records who is receiving each round, who says they have paid, and
-who has confirmed receipt.
+payout from ContriPay. It records who is receiving each round and which contributions the
+group admin has confirmed as paid.
 
 It consists of:
 
@@ -168,15 +168,20 @@ After build finishes:
 2. Payout order is the member `order` (1, 2, 3, …). In round N, the member with order N is the
    **recipient**; every other member is a **payer**.
 3. Each payer sends the contribution **directly to the recipient's bank account** (shown in the
-   app, confirmed via Paystack bank resolve) and taps **"I've paid"**, optionally with a transfer
-   reference.
-4. The recipient taps **"Confirm received"** for each payer, or **"Not received"**, which sets
-   that payment back to unpaid and notifies the payer.
-5. When every payer is confirmed, the recipient is marked as having received and the next round
-   opens. After the final member receives, the group is completed.
+   app, confirmed via Paystack bank resolve). They can tap **"I've sent my payment"** (optional
+   transfer reference). This only notifies the group admin and shows "awaiting admin
+   confirmation". **It does not count as paid.**
+4. **Only the group admin** (`group.createdBy`) can mark a member's contribution as paid
+   (**"Confirm paid"**; `confirmedAt` / `confirmedBy` are stored). The admin can **"Undo"** a
+   mistaken confirmation, which resets it to unpaid and notifies the member. Members, including
+   the recipient, cannot confirm anything.
+5. When the admin has confirmed every payer, the recipient is marked as having received and the
+   next round opens. After the final member receives, the group is completed.
 
-Contribution status: `pending → marked_paid → confirmed`, plus `unpaid` (past due or disputed)
-and `defaulted` (still unconfirmed when the grace period ends).
+Contribution status: `pending → marked_paid` ("I've sent", not paid) `→ confirmed` (by admin),
+plus `unpaid` (past due, or confirmation undone) and `defaulted` (still unconfirmed by the admin
+when the grace period ends). Reliability points for on-time (+2) / late (−5) payment are awarded
+when the round settles, based on whether the admin confirmed before the due date.
 
 The background job (every 30 min) sends reminders 48h and 24h before the due date. At the due
 date, unreported payments become `unpaid` and the round is paused with a grace period (default
@@ -187,10 +192,12 @@ penalty.** The round stays paused until the remaining payments are confirmed.
 ### Round endpoints
 
 - `GET /api/groups/:id/rounds/current`: recipient (name + bank details, members only), amount,
-  due date, each payer's status
-- `POST /api/groups/:id/rounds/current/mark-paid`: body `{ "reference"?: string }`
-- `POST /api/groups/:id/rounds/current/confirm/:userId`: round recipient only
-- `POST /api/groups/:id/rounds/current/dispute/:userId`: round recipient only
+  due date, confirmed progress, the viewer's own status; the per-member checklist (`payments`)
+  is returned to the admin only
+- `POST /api/groups/:id/rounds/current/mark-paid`: member "I've sent my payment", body
+  `{ "reference"?: string }`; notifies the admin, does not count as paid
+- `POST /api/groups/:id/rounds/current/confirm/:userId`: **group admin only** (403 otherwise)
+- `POST /api/groups/:id/rounds/current/unconfirm/:userId`: **group admin only**; back to unpaid
 
 ### KYC
 
