@@ -5,6 +5,7 @@ import {
   login,
   logout,
   me,
+  getBanks,
   register,
   submitTier1Kyc,
   uploadAvatar,
@@ -31,7 +32,16 @@ router.post("/register", authLimiter, validateBody(registerSchema), register);
 router.post("/login", authLimiter, validateBody(loginSchema), login);
 router.post("/logout", requireAuth, logout);
 router.get("/me", requireAuth, me);
-router.post("/kyc/tier1", requireAuth, validateBody(submitTier1KycSchema), submitTier1Kyc);
+const kycLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many attempts, try again later" },
+});
+
+router.get("/banks", requireAuth, getBanks);
+router.post("/kyc/tier1", requireAuth, kycLimiter, validateBody(submitTier1KycSchema), submitTier1Kyc);
 router.post("/avatar", requireAuth, validateBody(uploadAvatarSchema), uploadAvatar);
 
 export default router;

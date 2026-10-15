@@ -6,6 +6,7 @@ import { env } from "../config/env";
 import { HttpError } from "../errors/HttpError";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { uploadAvatarToCloudinary } from "../services/cloudinary.service";
+import { listBanks, resolveBankAccount } from "../services/paystack.services";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, phone, password, username } = req.body as {
@@ -14,6 +15,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     phone: string;
     password: string;
     username: string;
+    consentAccepted: true;
   };
 
   const existingUser = await UserModel.findOne({ email });
@@ -29,6 +31,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     phone,
     username,
     password: hashedPassword,
+    consentAcceptedAt: new Date(),
   });
 
   const token = jwt.sign(
@@ -94,7 +97,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 export const me = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
   const user = await UserModel.findById(userId).select(
-    "name email username phone kycTier basicKycCompleted profileImage reliabilityScore isRestricted isFlagged"
+    "name email username phone kycTier basicKycCompleted profileImage reliabilityScore isRestricted isFlagged bankAccount kycProfile"
   );
   if (!user) throw new HttpError(404, "User not found");
 
@@ -112,48 +115,79 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
       reliabilityScore: user.reliabilityScore,
       isRestricted: user.isRestricted,
       isFlagged: user.isFlagged,
+      bankAccount: user.bankAccount?.accountNumber
+        ? {
+            accountNumber: user.bankAccount.accountNumber,
+            accountName: user.bankAccount.accountName ?? null,
+            bankName: user.bankAccount.bankName ?? null,
+            bankCode: user.bankAccount.bankCode ?? null,
+            confirmed: Boolean(user.bankAccount.confirmedAt),
+          }
+        : null,
+      identity: user.kycProfile?.identityLast4
+        ? {
+            type: user.kycProfile.identityType ?? null,
+            last4: user.kycProfile.identityLast4,
+            // BVN/NIN is not checked against NIBSS/NIMC; only "details submitted".
+            verified: false,
+          }
+        : null,
     },
   });
 });
 
 export const submitTier1Kyc = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).userId as string;
-  const { bvnOrNin, accountNumber, bankName, bankCode, accountName } = req.body as {
+  const { bvnOrNin, identityType, accountNumber, bankName, bankCode } = req.body as {
     bvnOrNin: string;
+    identityType?: "bvn" | "nin";
     accountNumber: string;
     bankName: string;
-    bankCode?: string;
-    accountName: string;
+    bankCode: string;
   };
 
-  const user = await UserModel.findByIdAndUpdate(
-    userId,
-    {
-      kycTier: 1,
-      basicKycCompleted: true,
-    },
-    { new: true }
-  );
-
+  const user = await UserModel.findById(userId);
   if (!user) throw new HttpError(404, "User not found");
 
-  // Keep updates separate to avoid accidental overwrites of other bank fields.
-  if (!user.bankAccount) user.bankAccount = {};
-  user.bankAccount.accountNumber = accountNumber;
-  user.bankAccount.bankName = bankName;
-  user.bankAccount.bankCode = bankCode;
-  user.bankAccount.accountName = accountName;
-  user.kycProfile = {
-    verified: true,
-    identityType: bvnOrNin.trim().length === 11 ? "bvn" : "nin",
-    identityLast4: bvnOrNin.trim().slice(-4),
-    legalName: user.name,
-    verifiedBankAccountName: accountName,
-    verifiedAt: new Date(),
+  // Rejects (400) if Paystack cannot resolve the account; nothing is saved in that case.
+  const resolved = await resolveBankAccount(accountNumber, bankCode);
+  const now = new Date();
+
+  user.bankAccount = {
+    accountNumber: resolved.accountNumber,
+    bankName,
+    bankCode,
+    accountName: resolved.accountName,
+    confirmedAt: now,
   } as any;
+  // BVN/NIN is NOT verified: we keep only the last 4 digits and never claim otherwise.
+  user.kycProfile = {
+    identityVerified: false,
+    identityType,
+    identityLast4: bvnOrNin.trim().slice(-4),
+    verifiedBankAccountName: resolved.accountName,
+    detailsSubmittedAt: now,
+  } as any;
+  user.kycTier = 1;
+  user.basicKycCompleted = true;
   await user.save();
 
-  res.status(200).json({ success: true, message: "Tier 1 KYC submitted successfully" });
+  res.status(200).json({
+    success: true,
+    message: "Details submitted. Bank account confirmed.",
+    bankAccount: {
+      accountNumber: resolved.accountNumber,
+      accountName: resolved.accountName,
+      bankName,
+      bankCode,
+      confirmed: true,
+    },
+  });
+});
+
+export const getBanks = asyncHandler(async (_req: Request, res: Response) => {
+  const banks = await listBanks();
+  res.status(200).json({ success: true, banks });
 });
 
 export const uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
