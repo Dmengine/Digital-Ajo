@@ -11,12 +11,12 @@ import { assessGroupEligibility, canTakeEarlyPayoutPosition } from "../services/
 import { createGroupChatMessage } from "../services/groupChat.service";
 import { requireGroupMember } from "../services/groupMember.service";
 import {
-  confirmContributionReceived,
-  disputeContribution,
+  confirmContribution,
   getCurrentRound,
   isMembershipOpen,
-  markContributionPaid,
+  markContributionSent,
   membershipLocksAt,
+  unconfirmContribution,
 } from "../services/round.service";
 import { HttpError } from "../errors/HttpError";
 import { asyncHandler } from "../middleware/asyncHandler";
@@ -448,18 +448,18 @@ export const getCurrentRoundHandler = asyncHandler(async (req: Request, res: Res
   res.status(200).json({ success: true, ...data });
 });
 
-export const markRoundPaid = asyncHandler(async (req: Request, res: Response) => {
+export const markRoundSent = asyncHandler(async (req: Request, res: Response) => {
   const { reference } = req.body as { reference?: string };
-  const contribution = await markContributionPaid(req.params.id, (req as any).userId as string, reference);
-  res.status(200).json({ success: true, message: "Marked as paid. Waiting for the recipient to confirm.", contribution });
+  const contribution = await markContributionSent(req.params.id, (req as any).userId as string, reference);
+  res.status(200).json({ success: true, message: "The admin has been notified. Awaiting admin confirmation.", contribution });
 });
 
 export const confirmRoundPayment = asyncHandler(async (req: Request, res: Response) => {
-  const result = await confirmContributionReceived(req.params.id, (req as any).userId as string, req.params.userId);
+  const result = await confirmContribution(req.params.id, (req as any).userId as string, req.params.userId);
   res.status(200).json({ success: true, message: "Payment confirmed", ...result });
 });
 
-export const disputeRoundPayment = asyncHandler(async (req: Request, res: Response) => {
-  const contribution = await disputeContribution(req.params.id, (req as any).userId as string, req.params.userId);
-  res.status(200).json({ success: true, message: "Marked as not received. The payer has been notified.", contribution });
+export const unconfirmRoundPayment = asyncHandler(async (req: Request, res: Response) => {
+  const contribution = await unconfirmContribution(req.params.id, (req as any).userId as string, req.params.userId);
+  res.status(200).json({ success: true, message: "Confirmation removed. The member has been notified.", contribution });
 });

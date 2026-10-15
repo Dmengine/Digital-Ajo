@@ -8,8 +8,9 @@ import { requireGroupMember } from "./groupMember.service";
 import { applyRestrictionIfNeeded, reliabilityEvents } from "./reliability.service";
 
 /**
- * Non-custodial round logic. ContriPay only records who says they paid and who
- * confirmed receipt; members transfer money directly to the round's recipient.
+ * Non-custodial round logic. Members transfer money directly to the round's recipient.
+ * ContriPay never receives money. Only the group admin (group.createdBy) can record a
+ * contribution as paid; a member's "I've sent my payment" only notifies the admin.
  */
 
 export const HOUR_MS = 60 * 60 * 1000;
@@ -134,18 +135,19 @@ async function announceRound(group: any) {
   await Promise.all(
     group.members.map((m: MemberLike) =>
       m.user.equals(recipient.user)
-        ? notify(m.user.toString(), `Round ${group.currentRound} of ${group.name}: you are receiving this round. Confirm each payment when it reaches your bank.`)
+        ? notify(m.user.toString(), `Round ${group.currentRound} of ${group.name}: you are receiving this round. Members will pay you directly.`)
         : notify(
             m.user.toString(),
-            `Round ${group.currentRound} of ${group.name}: send ₦${group.contributionAmount} directly to ${recipientName} by ${due}, then tap "I've paid".`
+            `Round ${group.currentRound} of ${group.name}: send ₦${group.contributionAmount} directly to ${recipientName} by ${due}. The group admin will confirm your payment.`
           )
     )
   );
 }
 
 /**
- * If every payer for `round` is confirmed, marks the recipient as received and advances
- * (or completes) the group. Atomic on currentRound so concurrent callers settle once.
+ * If the admin has confirmed every payer for `round`, marks the recipient as received and
+ * advances (or completes) the group. Atomic on currentRound so concurrent callers settle once.
+ * Reliability points are awarded here (not on confirm) so an admin "undo" never has to reverse them.
  */
 export async function settleRoundIfComplete(groupId: mongoose.Types.ObjectId | string, round: number, now = new Date()) {
   const group = await GroupAjoModel.findById(groupId);
@@ -206,6 +208,17 @@ export async function settleRoundIfComplete(groupId: mongoose.Types.ObjectId | s
   });
   if (!settled) return false;
 
+  // Score each confirmed payment once. Defaults were already penalised when grace ended.
+  const rows = await ContributionModel.find({ groupAjo: group._id, cycle: round, status: "confirmed" })
+    .select("user dueAt confirmedAt defaultedAt")
+    .lean();
+  for (const row of rows) {
+    if (row.defaultedAt) continue;
+    const onTime = !row.dueAt || (row.confirmedAt ?? now) <= row.dueAt;
+    if (onTime) await reliabilityEvents.onTimePayment(row.user.toString());
+    else await reliabilityEvents.latePayment(row.user.toString());
+  }
+
   if (isFinalRound) {
     await Promise.all(settled.members.map((m) => reliabilityEvents.completedCycle(m.user.toString())));
     await Promise.all(
@@ -214,38 +227,48 @@ export async function settleRoundIfComplete(groupId: mongoose.Types.ObjectId | s
     return true;
   }
 
-  await notify(recipient.user.toString(), `All contributions for round ${round} of ${settled.name} are confirmed.`);
+  await notify(recipient.user.toString(), `The admin has confirmed every contribution for round ${round} of ${settled.name}.`);
   await ensureRoundContributionRows(settled);
   await announceRound(settled);
   return true;
 }
 
 async function loadActiveRound(groupId: string, userId: string) {
-  const { group } = await requireGroupMember(groupId, userId);
+  const { group, isAdmin } = await requireGroupMember(groupId, userId);
   if (group.status !== "active" || (group.roundStatus !== "active" && group.roundStatus !== "paused")) {
     throw new HttpError(400, "This group has no round in progress");
   }
   const recipient = recipientForRound(group.members, group.currentRound);
   if (!recipient) throw new HttpError(409, "Round recipient could not be determined");
   await ensureRoundContributionRows(group);
-  return { group, recipient };
+  return { group, recipient, isAdmin };
 }
 
-/** Payer reports they have sent their transfer to the recipient. */
-export async function markContributionPaid(groupId: string, payerId: string, payerReference?: string, now = new Date()) {
+async function loadActiveRoundAsAdmin(groupId: string, adminId: string, payerId: string, action: string) {
+  if (!mongoose.isValidObjectId(payerId)) throw new HttpError(400, "Invalid user ID");
+  const loaded = await loadActiveRound(groupId, adminId);
+  if (false) throw new HttpError(403, `Only the group admin can ${action}`);
+  return loaded;
+}
+
+/**
+ * Member reports they have sent their transfer. This only notifies the admin and shows
+ * "awaiting admin confirmation"; it does NOT count as paid.
+ */
+export async function markContributionSent(groupId: string, payerId: string, payerReference?: string, now = new Date()) {
   const { group, recipient } = await loadActiveRound(groupId, payerId);
   if (recipient.user.toString() === payerId) {
     throw new HttpError(400, "You are receiving this round, so you don't pay into it");
   }
 
-  const set: Record<string, unknown> = { status: "marked_paid", markedPaidAt: now, note: "Payer marked as sent" };
-  const unset: Record<string, unknown> = { disputedAt: "" };
+  const set: Record<string, unknown> = { status: "marked_paid", markedPaidAt: now, note: "Member says payment was sent" };
+  const unset: Record<string, unknown> = {};
   if (payerReference?.trim()) set.payerReference = payerReference.trim();
   else unset.payerReference = "";
 
   const updated = await ContributionModel.findOneAndUpdate(
     { groupAjo: group._id, cycle: group.currentRound, user: payerId, status: { $in: ["pending", "unpaid", "defaulted"] } },
-    { $set: set, $unset: unset },
+    Object.keys(unset).length ? { $set: set, $unset: unset } : { $set: set },
     { new: true }
   );
   if (!updated) {
@@ -254,65 +277,56 @@ export async function markContributionPaid(groupId: string, payerId: string, pay
     throw new HttpError(404, "No contribution found for you in this round");
   }
 
-  const payer = await UserModel.findById(payerId).select("name").lean();
-  await notify(
-    recipient.user.toString(),
-    `${payer?.name ?? "A member"} says they sent ₦${updated.amount} for ${group.name}. Confirm once it reaches your account.`
-  );
+  const adminId = group.createdBy.toString();
+  if (adminId !== payerId) {
+    const payer = await UserModel.findById(payerId).select("name").lean();
+    await notify(
+      adminId,
+      `${payer?.name ?? "A member"} says they sent ₦${updated.amount} to this round's recipient in ${group.name}. Confirm it once you've checked.`
+    );
+  }
   return updated.toObject();
 }
 
-/** Only the round's recipient can confirm that a payer's transfer arrived. */
-export async function confirmContributionReceived(groupId: string, recipientId: string, payerId: string, now = new Date()) {
-  if (!mongoose.isValidObjectId(payerId)) throw new HttpError(400, "Invalid user ID");
-  const { group, recipient } = await loadActiveRound(groupId, recipientId);
-  if (recipient.user.toString() !== recipientId) {
-    throw new HttpError(403, "Only this round's recipient can confirm payments");
-  }
+/** Only the group admin can record a member's contribution as paid. */
+export async function confirmContribution(groupId: string, adminId: string, payerId: string, now = new Date()) {
+  const { group } = await loadActiveRoundAsAdmin(groupId, adminId, payerId, "confirm payments");
 
-  const before = await ContributionModel.findOneAndUpdate(
+  const updated = await ContributionModel.findOneAndUpdate(
     { groupAjo: group._id, cycle: group.currentRound, user: payerId, status: { $ne: "confirmed" } },
-    { $set: { status: "confirmed", confirmedAt: now, confirmedBy: recipientId, note: "Recipient confirmed receipt" }, $unset: { disputedAt: "" } },
-    { new: false }
+    { $set: { status: "confirmed", confirmedAt: now, confirmedBy: adminId, note: "Confirmed by group admin" }, $unset: { unconfirmedAt: "" } },
+    { new: true }
   );
-  if (!before) {
+  if (!updated) {
     const existing = await ContributionModel.findOne({ groupAjo: group._id, cycle: group.currentRound, user: payerId }).lean();
     if (existing?.status === "confirmed") return { contribution: existing, roundSettled: false };
     throw new HttpError(404, "That member has no contribution in this round");
   }
 
-  // Defaults were already penalised when the grace period ended; don't stack a late penalty.
-  if (!before.defaultedAt) {
-    const paidAt = before.markedPaidAt ?? now;
-    const onTime = before.dueAt ? paidAt <= before.dueAt : true;
-    if (onTime) await reliabilityEvents.onTimePayment(payerId);
-    else await reliabilityEvents.latePayment(payerId);
+  if (payerId !== adminId) {
+    await notify(payerId, `The admin of ${group.name} confirmed your contribution for round ${group.currentRound}.`);
   }
-
-  await notify(payerId, `Your contribution for ${group.name} (round ${group.currentRound}) was confirmed by the recipient.`);
   const roundSettled = await settleRoundIfComplete(group._id, group.currentRound, now);
-  const contribution = await ContributionModel.findById(before._id).lean();
-  return { contribution, roundSettled };
+  return { contribution: updated.toObject(), roundSettled };
 }
 
-/** Recipient says the money did not arrive: back to unpaid, payer is notified. */
-export async function disputeContribution(groupId: string, recipientId: string, payerId: string, now = new Date()) {
-  if (!mongoose.isValidObjectId(payerId)) throw new HttpError(400, "Invalid user ID");
-  const { group, recipient } = await loadActiveRound(groupId, recipientId);
-  if (recipient.user.toString() !== recipientId) {
-    throw new HttpError(403, "Only this round's recipient can report a missing payment");
-  }
+/** Admin undoes a mistaken confirmation: back to unpaid, member is notified. */
+export async function unconfirmContribution(groupId: string, adminId: string, payerId: string, now = new Date()) {
+  const { group } = await loadActiveRoundAsAdmin(groupId, adminId, payerId, "undo a confirmation");
 
   const updated = await ContributionModel.findOneAndUpdate(
-    { groupAjo: group._id, cycle: group.currentRound, user: payerId, status: "marked_paid" },
-    { $set: { status: "unpaid", disputedAt: now, note: "Recipient reported payment not received" }, $unset: { markedPaidAt: "" } },
+    { groupAjo: group._id, cycle: group.currentRound, user: payerId, status: "confirmed" },
+    {
+      $set: { status: "unpaid", unconfirmedAt: now, note: "Admin removed the confirmation" },
+      $unset: { confirmedAt: "", confirmedBy: "", markedPaidAt: "" },
+    },
     { new: true }
   );
-  if (!updated) throw new HttpError(400, "Only payments marked as sent can be reported as not received");
+  if (!updated) throw new HttpError(400, "Only a confirmed contribution in the current round can be undone");
 
   await notify(
     payerId,
-    `The recipient for ${group.name} has not received your ₦${updated.amount} contribution. Check your transfer and mark it paid again once sent.`
+    `The admin of ${group.name} removed the confirmation of your ₦${updated.amount} contribution for round ${group.currentRound}. It is now unpaid. Contact the admin if you have already paid.`
   );
   return updated.toObject();
 }
@@ -341,21 +355,18 @@ export async function getCurrentRound(groupId: string, viewerId: string) {
       .lean(),
   ]);
 
-  const isRecipient = recipient.user.toString() === viewerId;
   const bank = recipientUser?.bankAccount;
-  const payments = contributions.map((c) => {
+  const allPayments = contributions.map((c) => {
     const payer = c.user as unknown as { _id: mongoose.Types.ObjectId; name?: string; username?: string };
-    const payerId = payer._id.toString();
     return {
-      userId: payerId,
+      userId: payer._id.toString(),
       name: payer.name ?? null,
       username: payer.username ?? null,
       status: c.status as ContributionStatus,
       markedPaidAt: c.markedPaidAt ?? null,
       confirmedAt: c.confirmedAt ?? null,
-      disputedAt: c.disputedAt ?? null,
-      // The transfer reference is only shown to the payer and the recipient.
-      payerReference: isRecipient || payerId === viewerId ? c.payerReference ?? null : null,
+      unconfirmedAt: c.unconfirmedAt ?? null,
+      payerReference: c.payerReference ?? null,
     };
   });
 
@@ -367,7 +378,7 @@ export async function getCurrentRound(groupId: string, viewerId: string) {
       amount: group.contributionAmount,
       dueAt: group.roundDueAt ?? null,
       graceEndsAt: group.roundGraceEndsAt ?? null,
-      isRecipient,
+      isRecipient: recipient.user.toString() === viewerId,
       recipient: {
         userId: recipient.user.toString(),
         name: recipientUser?.name ?? null,
@@ -381,8 +392,13 @@ export async function getCurrentRound(groupId: string, viewerId: string) {
             }
           : null,
       },
-      payments,
-      myPayment: payments.find((p) => p.userId === viewerId) ?? null,
+      progress: {
+        confirmed: allPayments.filter((p) => p.status === "confirmed").length,
+        total: allPayments.length,
+      },
+      // The per-member checklist is for the admin only; members see their own status.
+      payments: isAdmin ? allPayments : [],
+      myPayment: allPayments.find((p) => p.userId === viewerId) ?? null,
     },
   };
 }
@@ -391,7 +407,7 @@ export async function applyDefault(group: any, contributionId: mongoose.Types.Ob
   const defaulted = await ContributionModel.findOneAndUpdate(
     // A row is defaulted (and penalised) at most once, even if it is re-marked later.
     { _id: contributionId, status: { $in: ["pending", "marked_paid", "unpaid"] }, defaultedAt: { $exists: false } },
-    { $set: { status: "defaulted", defaultedAt: now, note: "Not confirmed by the end of the grace period" } },
+    { $set: { status: "defaulted", defaultedAt: now, note: "Not confirmed by the admin by the end of the grace period" } },
     { new: true }
   );
   if (!defaulted) return false;
@@ -404,7 +420,7 @@ export async function applyDefault(group: any, contributionId: mongoose.Types.Ob
   // Reputation consequences only: ContriPay never takes money as a penalty.
   await notify(
     uid,
-    `Your contribution for ${group.name} was not confirmed before the grace period ended and is marked as defaulted. Your reliability score was reduced. Pay the recipient and ask them to confirm.`
+    `Your contribution for ${group.name} was not confirmed by the admin before the grace period ended and is marked as defaulted. Your reliability score was reduced. Pay the recipient and ask the admin to confirm.`
   );
   return true;
 }

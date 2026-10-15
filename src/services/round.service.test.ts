@@ -8,12 +8,13 @@ import { UserModel } from "../models/user.model";
 import { GroupAjoModel } from "../models/groupAjo.model";
 import { ContributionModel } from "../models/contribution.model";
 import { runContributionCycle } from "./contributionCycle.service";
+import { notify } from "./notification.service";
 import {
-  confirmContributionReceived,
-  disputeContribution,
+  confirmContribution,
   getCurrentRound,
   isMembershipOpen,
-  markContributionPaid,
+  markContributionSent,
+  unconfirmContribution,
 } from "./round.service";
 
 const HOUR = 60 * 60 * 1000;
@@ -86,79 +87,118 @@ describe("round lifecycle (non-custodial)", () => {
     expect(rows.every((r) => r.recipient.toString() === group.members[0].user.toString())).toBe(true);
   });
 
-  it("mark-paid -> confirm -> round advances and recipient is marked received", async () => {
+  // users[0] is the group admin (createdBy) and also the round-1 recipient (order 1).
+
+  it("non-admin members, including the recipient, get 403 on confirm and unconfirm", async () => {
+    const { group, users } = await makeGroup(new Date(Date.now() + DAY), 4);
+    const [admin, b, c, d] = users;
+    await runContributionCycle(new Date());
+    await markContributionSent(id(group), id(c));
+
+    for (const actor of [b, c, d]) {
+      await expect(confirmContribution(id(group), id(actor), id(c))).rejects.toMatchObject({ statusCode: 403 });
+      await expect(unconfirmContribution(id(group), id(actor), id(c))).rejects.toMatchObject({ statusCode: 403 });
+    }
+    // Nothing changed.
+    const row = (await ContributionModel.findOne({ groupAjo: group._id, cycle: 1, user: c._id }))!;
+    expect(row.status).toBe("marked_paid");
+    expect(row.confirmedAt).toBeUndefined();
+
+    // In round 2 the recipient is b (not the admin) and still can't confirm.
+    await confirmContribution(id(group), id(admin), id(b));
+    await confirmContribution(id(group), id(admin), id(c));
+    await confirmContribution(id(group), id(admin), id(d));
+    expect((await GroupAjoModel.findById(group._id))!.currentRound).toBe(2);
+    await expect(confirmContribution(id(group), id(b), id(c))).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it("a member's \"I've sent\" does not count as paid and notifies the admin", async () => {
     const start = new Date(Date.now() + DAY);
     const { group, users } = await makeGroup(start);
-    const [a, b, c] = users;
+    const [admin, b, c] = users;
+    await runContributionCycle(new Date());
+    vi.mocked(notify).mockClear();
+
+    await markContributionSent(id(group), id(b), "NIP-123");
+    await markContributionSent(id(group), id(c));
+
+    expect(vi.mocked(notify).mock.calls.filter(([uid]) => uid === id(admin))).toHaveLength(2);
+    const view = await getCurrentRound(id(group), id(b));
+    expect(view.round!.myPayment?.status).toBe("marked_paid");
+    expect(view.round!.progress).toEqual({ confirmed: 0, total: 2 });
+    // Members only see their own status; the checklist is admin-only.
+    expect(view.round!.payments).toEqual([]);
+    expect((await getCurrentRound(id(group), id(admin))).round!.payments).toHaveLength(2);
+
+    let g = (await GroupAjoModel.findById(group._id))!;
+    expect(g.currentRound).toBe(1);
+    expect(g.members.find((m) => m.order === 1)!.hasReceived).toBe(false);
+    await expect(markContributionSent(id(group), id(admin))).rejects.toMatchObject({ statusCode: 400 }); // admin is the recipient
+
+    // Grace ends with both still only "sent" -> they default, because only admin confirmation counts.
+    await runContributionCycle(new Date(start.getTime() + HOUR));
+    await runContributionCycle(new Date(start.getTime() + 49 * HOUR));
+    const rows = await ContributionModel.find({ groupAjo: group._id, cycle: 1 }).lean();
+    expect(rows.every((r) => r.status === "defaulted")).toBe(true);
+    g = (await GroupAjoModel.findById(group._id))!;
+    expect(g.currentRound).toBe(1);
+  });
+
+  it("round advances after the admin confirms every member; confirmedAt/confirmedBy stored", async () => {
+    const { group, users } = await makeGroup(new Date(Date.now() + DAY));
+    const [admin, b, c] = users;
     const now = new Date();
     await runContributionCycle(now);
 
-    await markContributionPaid(id(group), id(b), "NIP-123", now);
-    await markContributionPaid(id(group), id(c), undefined, now);
-
-    const view = await getCurrentRound(id(group), id(b));
-    expect(view.round!.recipient.userId).toBe(id(a));
-    expect(view.round!.recipient.bankAccount?.accountNumber).toBe("0123456789");
-    expect(view.round!.myPayment?.status).toBe("marked_paid");
-    expect(view.round!.myPayment?.payerReference).toBe("NIP-123");
-    // Other payers' references are hidden from non-recipients.
-    expect(view.round!.payments.find((p) => p.userId === id(c))?.payerReference).toBeNull();
-
-    const first = await confirmContributionReceived(id(group), id(a), id(b), now);
+    await markContributionSent(id(group), id(b), "NIP-123", now);
+    const first = await confirmContribution(id(group), id(admin), id(b), now);
     expect(first.roundSettled).toBe(false);
-    const second = await confirmContributionReceived(id(group), id(a), id(c), now);
+    expect(first.contribution.confirmedBy?.toString()).toBe(id(admin));
+    expect(first.contribution.confirmedAt).toEqual(now);
+
+    // c never tapped "I've sent"; the admin can still confirm (e.g. checked their bank).
+    const second = await confirmContribution(id(group), id(admin), id(c), now);
     expect(second.roundSettled).toBe(true);
 
     const g = (await GroupAjoModel.findById(group._id))!;
     expect(g.currentRound).toBe(2);
-    expect(g.roundStatus).toBe("active");
     expect(g.members.find((m) => m.order === 1)!.hasReceived).toBe(true);
-    expect(g.members.find((m) => m.order === 2)!.hasReceived).toBe(false);
 
     const round2 = await ContributionModel.find({ groupAjo: group._id, cycle: 2 }).lean();
-    expect(round2.map((r) => r.user.toString()).sort()).toEqual([id(a), id(c)].sort());
+    expect(round2.map((r) => r.user.toString()).sort()).toEqual([id(admin), id(c)].sort());
     expect(round2.every((r) => r.recipient.toString() === id(b))).toBe(true);
 
-    // On-time payers gain reliability.
-    expect((await UserModel.findById(b._id))!.reliabilityScore).toBe(100); // clamped at max
+    const view = await getCurrentRound(id(group), id(c));
+    expect(view.round!.recipient.userId).toBe(id(b));
+    expect(view.round!.recipient.bankAccount?.accountNumber).toBe("0123456789");
   });
 
-  it("only the round's recipient can confirm or dispute", async () => {
-    const { group, users } = await makeGroup(new Date(Date.now() + DAY));
-    const [a, b, c] = users;
-    await runContributionCycle(new Date());
-    await markContributionPaid(id(group), id(c));
-
-    await expect(confirmContributionReceived(id(group), id(b), id(c))).rejects.toMatchObject({ statusCode: 403 });
-    await expect(disputeContribution(id(group), id(b), id(c))).rejects.toMatchObject({ statusCode: 403 });
-    await expect(markContributionPaid(id(group), id(a))).rejects.toMatchObject({ statusCode: 400 });
-  });
-
-  it("dispute resets to unpaid and the payer can mark paid again", async () => {
-    const { group, users } = await makeGroup(new Date(Date.now() + DAY));
-    const [a, b] = users;
+  it("admin can undo a confirmation: back to unpaid, member notified, round not advanced", async () => {
+    const { group, users } = await makeGroup(new Date(Date.now() + DAY), 4);
+    const [admin, b] = users;
     await runContributionCycle(new Date());
 
-    await markContributionPaid(id(group), id(b), "ref-1");
-    const disputed = await disputeContribution(id(group), id(a), id(b));
-    expect(disputed.status).toBe("unpaid");
-    expect(disputed.disputedAt).toBeInstanceOf(Date);
+    await confirmContribution(id(group), id(admin), id(b));
+    vi.mocked(notify).mockClear();
+    const undone = await unconfirmContribution(id(group), id(admin), id(b));
+    expect(undone.status).toBe("unpaid");
+    expect(undone.confirmedAt).toBeUndefined();
+    expect(undone.confirmedBy).toBeUndefined();
+    expect(vi.mocked(notify).mock.calls.some(([uid]) => uid === id(b))).toBe(true);
 
-    const again = await markContributionPaid(id(group), id(b), "ref-2");
-    expect(again.status).toBe("marked_paid");
-    expect(again.payerReference).toBe("ref-2");
+    await expect(unconfirmContribution(id(group), id(admin), id(b))).rejects.toMatchObject({ statusCode: 400 });
+    const view = await getCurrentRound(id(group), id(admin));
+    expect(view.round!.progress.confirmed).toBe(0);
   });
 
-  it("default after grace: reliability penalty and restriction only, no money taken, penalised once", async () => {
+  it("default after grace: reliability penalty only, no money taken, penalised once", async () => {
     const start = new Date(Date.now() + DAY);
     const { group, users } = await makeGroup(start);
-    const [a, b, c] = users;
+    const [admin, b, c] = users;
     await runContributionCycle(new Date());
+    await confirmContribution(id(group), id(admin), id(b));
 
-    await markContributionPaid(id(group), id(b));
-    await confirmContributionReceived(id(group), id(a), id(b));
-
-    // Due date passes with C unpaid -> round paused, C unpaid.
+    // Due date passes with C unconfirmed -> round paused, C unpaid.
     await runContributionCycle(new Date(start.getTime() + HOUR));
     let g = (await GroupAjoModel.findById(group._id))!;
     expect(g.roundStatus).toBe("paused");
@@ -185,13 +225,28 @@ describe("round lifecycle (non-custodial)", () => {
     const collections = (await mongoose.connection.db!.listCollections().toArray()).map((x) => x.name);
     expect(collections).not.toContain("transactions");
 
-    // Round stays paused until the defaulted payment is confirmed; a late confirm settles it without a further penalty.
+    // Round stays paused until the admin confirms the late payment; no further penalty for C.
     g = (await GroupAjoModel.findById(group._id))!;
     expect(g.currentRound).toBe(1);
-    const late = await confirmContributionReceived(id(group), id(a), id(c), new Date(afterGrace.getTime() + 2 * DAY));
+    const late = await confirmContribution(id(group), id(admin), id(c), new Date(afterGrace.getTime() + 2 * DAY));
     expect(late.roundSettled).toBe(true);
     expect((await UserModel.findById(c._id))!.reliabilityScore).toBe(80);
     expect((await GroupAjoModel.findById(group._id))!.currentRound).toBe(2);
+  });
+
+  it("scores reliability when the round settles: on-time +2, late -5", async () => {
+    const start = new Date(Date.now() + DAY);
+    const { group, users } = await makeGroup(start);
+    const [admin, b, c] = users;
+    await UserModel.updateMany({}, { $set: { reliabilityScore: 50 } });
+    await runContributionCycle(new Date());
+
+    await confirmContribution(id(group), id(admin), id(b), new Date(start.getTime() - HOUR));
+    expect((await UserModel.findById(b._id))!.reliabilityScore).toBe(50); // not scored until settle
+    await confirmContribution(id(group), id(admin), id(c), new Date(start.getTime() + HOUR));
+
+    expect((await UserModel.findById(b._id))!.reliabilityScore).toBe(52);
+    expect((await UserModel.findById(c._id))!.reliabilityScore).toBe(45);
   });
 
   it("restricts a member after repeated defaults", async () => {
@@ -208,24 +263,23 @@ describe("round lifecycle (non-custodial)", () => {
     expect(bUser.isRestricted).toBe(true);
   });
 
-  it("completes the group when the final member receives", async () => {
+  it("completes the group when the final member receives (admin confirms their own payment too)", async () => {
     const { group, users } = await makeGroup(new Date(Date.now() + DAY), 2);
-    const [a, b] = users;
+    const [admin, b] = users;
     await runContributionCycle(new Date());
 
-    await markContributionPaid(id(group), id(b));
-    await confirmContributionReceived(id(group), id(a), id(b));
-    await markContributionPaid(id(group), id(a));
-    const last = await confirmContributionReceived(id(group), id(b), id(a));
+    await confirmContribution(id(group), id(admin), id(b));
+    await markContributionSent(id(group), id(admin));
+    const last = await confirmContribution(id(group), id(admin), id(admin));
     expect(last.roundSettled).toBe(true);
 
     const g = (await GroupAjoModel.findById(group._id))!;
     expect(g.status).toBe("completed");
     expect(g.isCompleted).toBe(true);
     expect(g.members.every((m) => m.hasReceived)).toBe(true);
-    expect((await UserModel.findById(a._id))!.completedAjoCycles).toBe(1);
+    expect((await UserModel.findById(admin._id))!.completedAjoCycles).toBe(1);
 
-    const view = await getCurrentRound(id(group), id(a));
+    const view = await getCurrentRound(id(group), id(admin));
     expect(view.round).toBeNull();
   });
 

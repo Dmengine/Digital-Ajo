@@ -10,9 +10,9 @@ import {
   addGroupMember,
   removeGroupMember,
   getCurrentRoundHandler,
-  markRoundPaid,
+  markRoundSent,
   confirmRoundPayment,
-  disputeRoundPayment,
+  unconfirmRoundPayment,
 } from "../controller/group.controller";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
@@ -35,9 +35,11 @@ router.post("/:id/messages", requireAuth, validateBody(postGroupMessageSchema), 
 router.post("/:id/members", requireAuth, validateBody(addGroupMemberSchema), addGroupMember);
 router.delete("/:id/members/:userId", requireAuth, removeGroupMember);
 router.get("/:id/rounds/current", requireAuth, getCurrentRoundHandler);
-router.post("/:id/rounds/current/mark-paid", requireAuth, validateBody(markPaidSchema), markRoundPaid);
+// Member: "I've sent my payment" (notifies the admin; does not count as paid).
+router.post("/:id/rounds/current/mark-paid", requireAuth, validateBody(markPaidSchema), markRoundSent);
+// Group admin only.
 router.post("/:id/rounds/current/confirm/:userId", requireAuth, confirmRoundPayment);
-router.post("/:id/rounds/current/dispute/:userId", requireAuth, disputeRoundPayment);
+router.post("/:id/rounds/current/unconfirm/:userId", requireAuth, unconfirmRoundPayment);
 router.get("/:id", requireAuth, getGroupById);
 
 export default router;
