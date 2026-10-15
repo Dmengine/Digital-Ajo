@@ -1,6 +1,13 @@
 # ContriPay
 
-ContriPay is a cooperative savings and contribution platform with:
+ContriPay is a coordination and reminder tool for ajo / esusu (rotating savings) groups.
+
+**ContriPay does not hold your money. Contributions are paid directly between group members.**
+The platform never collects, stores or transfers funds: there is no wallet, no deposit and no
+payout from ContriPay. It records who is receiving each round, who says they have paid, and
+who has confirmed receipt.
+
+It consists of:
 
 - A TypeScript/Express backend API
 - A React web client (Vite)
@@ -17,7 +24,8 @@ ContriPay is a cooperative savings and contribution platform with:
 - Node.js 18+
 - npm 9+
 - MongoDB connection string
-- Paystack secret key (test or live)
+- Paystack secret key (test or live), used **only** to resolve bank account names
+  (`GET /bank/resolve`) and list Nigerian banks (`GET /bank`). No charges, transfers or webhooks.
 
 Optional services:
 
@@ -33,24 +41,26 @@ Required:
 
 - `MONGO_URI`
 - `JWT_SECRET`
-- `PAYSTACK_SECRET` (or `AJOPAY_PAYSTACK_KEY`)
+- `PAYSTACK_SECRET` (or `AJOPAY_PAYSTACK_KEY`): bank account resolve / bank list only
 
 Recommended:
 
 - `CORS_ORIGIN` (comma-separated origins)
 - `PORT` (defaults to `3001`)
-- `MOBILE_APP_RETURN_URL` (defaults to `contripay://wallet`)
-- `WEBHOOK_SECRET` (or `PAYSTACK_WEBHOOK_SECRET`)
 
 Optional:
 
-- `REDIS_URL`
+- `REDIS_URL` (recommended in production so only one instance runs the round job)
+- `CONTRIBUTION_JOB_INTERVAL_MINUTES` (default `30`)
+- `CONTRIBUTION_GRACE_HOURS` (24–48, default `48`)
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
 - `CLOUDINARY_CLOUD_NAME`
 - `CLOUDINARY_API_KEY`
 - `CLOUDINARY_API_SECRET`
+
+`WEBHOOK_SECRET`, `PAYSTACK_WEBHOOK_SECRET` and `MOBILE_APP_RETURN_URL` are no longer used.
 
 ## Install Dependencies
 
@@ -104,13 +114,16 @@ From `mobile/`:
 npm start
 ```
 
-The mobile API endpoint is configured in `mobile/app.json`:
+The mobile app is configured in `mobile/app.json`:
 
-- `expo.extra.apiBaseUrl`
+- `expo.extra.apiBaseUrl`: API endpoint
+- `expo.extra.privacyUrl`: URL of the web `/privacy` page, opened from the signup consent
+  checkbox (if empty, the app shows a short in-app summary instead)
 
 ## Tests and Typechecks
 
-Backend tests:
+Backend tests (round flow tests start an in-memory MongoDB via `mongodb-memory-server`;
+the first run downloads a MongoDB binary):
 
 ```bash
 npm test
@@ -147,14 +160,55 @@ After build finishes:
 - Download the APK artifact
 - Install it on Android device
 
+## How a round works
+
+1. A group is created with a contribution amount, frequency and start date. Members join by
+   invite until **48 hours before the start date**, when membership locks and round 1 opens.
+   Groups with fewer than 2 members at that point are cancelled.
+2. Payout order is the member `order` (1, 2, 3, …). In round N, the member with order N is the
+   **recipient**; every other member is a **payer**.
+3. Each payer sends the contribution **directly to the recipient's bank account** (shown in the
+   app, confirmed via Paystack bank resolve) and taps **"I've paid"**, optionally with a transfer
+   reference.
+4. The recipient taps **"Confirm received"** for each payer, or **"Not received"**, which sets
+   that payment back to unpaid and notifies the payer.
+5. When every payer is confirmed, the recipient is marked as having received and the next round
+   opens. After the final member receives, the group is completed.
+
+Contribution status: `pending → marked_paid → confirmed`, plus `unpaid` (past due or disputed)
+and `defaulted` (still unconfirmed when the grace period ends).
+
+The background job (every 30 min) sends reminders 48h and 24h before the due date. At the due
+date, unreported payments become `unpaid` and the round is paused with a grace period (default
+48h). When grace ends, unconfirmed payments are marked `defaulted`: the payer's **reliability
+score** drops and repeated defaults restrict the account. **No money is ever taken as a
+penalty.** The round stays paused until the remaining payments are confirmed.
+
+### Round endpoints
+
+- `GET /api/groups/:id/rounds/current`: recipient (name + bank details, members only), amount,
+  due date, each payer's status
+- `POST /api/groups/:id/rounds/current/mark-paid`: body `{ "reference"?: string }`
+- `POST /api/groups/:id/rounds/current/confirm/:userId`: round recipient only
+- `POST /api/groups/:id/rounds/current/dispute/:userId`: round recipient only
+
+### KYC
+
+`POST /api/auth/kyc/tier1` resolves the payout bank account with Paystack and stores the account
+holder name returned by the bank; it is rejected if the account can't be resolved. BVN/NIN is
+**not verified**: only the last 4 digits are stored, and the UI says "details submitted".
+
+### Data protection
+
+Registration requires accepting the privacy notice (`consentAccepted: true`); the acceptance time
+is stored as `consentAcceptedAt`. The web `/privacy` page is a **draft** pending review.
+
 ## Key Product Notes
 
 - Group admin-only actions are enforced server-side:
-	- Add member
+	- Add member (only while membership is open)
 	- Remove member
-	- Invite code visibility
 - Member removal is only allowed when the current round status is `completed`.
-- Wallet writes use transaction/session safeguards and idempotency protections for critical flows.
 
 ## API Health Check
 
