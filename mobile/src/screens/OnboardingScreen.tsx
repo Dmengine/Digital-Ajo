@@ -12,7 +12,7 @@ const slides = [
   {
     eyebrow: "Take turns",
     title: "Each round, one member receives.",
-    body: "Everyone else sends their contribution straight to that member's bank account, then taps \u201cI've paid\u201d. The recipient confirms when it arrives.",
+    body: "Everyone else sends their contribution straight to that member's bank account, and the group admin confirms each payment.",
   },
   {
     eyebrow: "Your money stays yours",

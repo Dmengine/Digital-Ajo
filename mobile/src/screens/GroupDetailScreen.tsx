@@ -290,7 +290,7 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
                       Round paused
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      At least one payment hasn't been confirmed by the recipient yet.
+                      The admin hasn't confirmed every payment yet.
                     </Text>
                     {dashboard.group.roundGraceEndsAt ? (
                       <Text style={{ color: colors.muted, fontSize: 12 }}>

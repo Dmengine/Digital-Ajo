@@ -3,9 +3,9 @@ import { Alert, Pressable, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import {
   confirmRoundPayment,
-  disputeRoundPayment,
   getCurrentRound,
-  markRoundPaid,
+  markRoundSent,
+  unconfirmRoundPayment,
   type ContributionStatus,
   type CurrentRoundResponse,
 } from "../api/groups.api";
@@ -15,8 +15,8 @@ import { colors } from "../theme/colors";
 
 const STATUS_LABEL: Record<ContributionStatus, string> = {
   pending: "Not paid yet",
-  marked_paid: "Sent · awaiting confirmation",
-  confirmed: "Confirmed",
+  marked_paid: "Awaiting admin confirmation",
+  confirmed: "Confirmed by admin",
   unpaid: "Unpaid",
   defaulted: "Defaulted",
 };
@@ -102,7 +102,7 @@ export function ThisRound({ groupId, onChanged }: { groupId: string; onChanged?:
 
   const bank = round.recipient.bankAccount;
   const my = round.myPayment;
-  const canMarkPaid = !round.isRecipient && my && (my.status === "pending" || my.status === "unpaid" || my.status === "defaulted");
+  const canMarkSent = my && (my.status === "pending" || my.status === "unpaid" || my.status === "defaulted");
 
   return (
     <Card>
@@ -116,10 +116,13 @@ export function ThisRound({ groupId, onChanged }: { groupId: string; onChanged?:
           <Text style={{ color: colors.text, fontSize: 22, fontWeight: "900" }}>{fmtMoney(round.amount)}</Text>
           <Text style={{ color: colors.muted, fontSize: 12, alignSelf: "flex-end" }}>due {fmtDate(round.dueAt)}</Text>
         </View>
+        <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>
+          {round.progress.confirmed} of {round.progress.total} confirmed by admin
+        </Text>
 
         {round.status === "paused" ? (
           <Text style={{ color: colors.warning, fontSize: 12, lineHeight: 18 }}>
-            The due date has passed and some payments aren't confirmed yet.
+            The due date has passed and the admin hasn't confirmed every payment yet.
             {round.graceEndsAt ? ` Grace period ends ${fmtDate(round.graceEndsAt)}.` : ""}
           </Text>
         ) : null}
@@ -165,31 +168,36 @@ export function ThisRound({ groupId, onChanged }: { groupId: string; onChanged?:
           )}
         </View>
 
-        {!round.isRecipient && my ? (
+        {my ? (
           <View style={{ borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12, gap: 10 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={{ color: colors.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>Your payment</Text>
               <StatusBadge status={my.status} />
             </View>
             {my.payerReference ? <Text style={{ color: colors.muted, fontSize: 12 }}>Reference: {my.payerReference}</Text> : null}
-            {my.disputedAt && my.status === "unpaid" ? (
-              <Text style={{ color: colors.warning, fontSize: 12 }}>
-                The recipient said they didn't receive it. Check your transfer, then mark it paid again.
+            {my.status === "marked_paid" ? (
+              <Text style={{ color: colors.text, fontSize: 12, lineHeight: 18 }}>
+                The admin has been notified. It counts as paid only once the admin confirms it.
               </Text>
             ) : null}
-            {canMarkPaid ? (
+            {my.unconfirmedAt && my.status === "unpaid" ? (
+              <Text style={{ color: colors.warning, fontSize: 12 }}>
+                The admin removed the confirmation of your payment. Contact the admin if you have already paid.
+              </Text>
+            ) : null}
+            {canMarkSent ? (
               <>
                 <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>
-                  Send {fmtMoney(round.amount)} from your bank app to the account above, then tap below.
+                  Send {fmtMoney(round.amount)} from your bank app to the account above, then let the admin know.
                 </Text>
                 <Field placeholder="Transfer reference (optional)" value={reference} onChangeText={setReference} maxLength={120} />
                 <PrimaryButton
-                  label="I've paid"
+                  label="I've sent my payment"
                   tone="accent"
-                  loading={busy === "mark"}
+                  loading={busy === "sent"}
                   onPress={() =>
-                    void run("mark", async () => {
-                      await markRoundPaid(groupId, reference);
+                    void run("sent", async () => {
+                      await markRoundSent(groupId, reference);
                       setReference("");
                     })
                   }
@@ -199,54 +207,35 @@ export function ThisRound({ groupId, onChanged }: { groupId: string; onChanged?:
           </View>
         ) : null}
 
-        <Text style={{ color: colors.text, fontWeight: "800", marginTop: 4 }}>
-          {round.isRecipient ? "Payments to you" : "Member payments"}
-        </Text>
-        {round.payments.map((p) => (
-          <View key={p.userId} style={{ borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12, gap: 8 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontWeight: "800" }}>{p.name ?? "Member"}</Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>
-                  @{p.username ?? "—"}
-                  {p.markedPaidAt ? ` · sent ${fmtDate(p.markedPaidAt)}` : ""}
-                  {round.isRecipient && p.payerReference ? ` · ref ${p.payerReference}` : ""}
-                </Text>
-              </View>
-              <StatusBadge status={p.status} />
-            </View>
-            {round.isRecipient && p.status !== "confirmed" ? (
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <Pressable
-                  disabled={busy !== null}
-                  onPress={() =>
-                    Alert.alert("Confirm received", `Confirm you received ${fmtMoney(round.amount)} from ${p.name ?? "this member"}?`, [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Confirm", onPress: () => void run(`confirm-${p.userId}`, () => confirmRoundPayment(groupId, p.userId)) },
-                    ])
-                  }
-                  style={({ pressed }) => ({
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    alignItems: "center",
-                    backgroundColor: "rgba(64,229,108,0.18)",
-                    opacity: pressed || busy !== null ? 0.6 : 1,
-                  })}
-                >
-                  <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 12 }}>Confirm received</Text>
-                </Pressable>
-                {p.status === "marked_paid" ? (
+        {data.isAdmin ? (
+          <>
+            <Text style={{ color: colors.text, fontWeight: "800", marginTop: 4 }}>Admin checklist</Text>
+            <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+              Only you can mark a contribution as paid. Check the money reached the recipient before confirming.
+            </Text>
+            {round.payments.map((p) => (
+              <View key={p.userId} style={{ borderRadius: 14, backgroundColor: colors.panelElevated, padding: 12, gap: 8 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontWeight: "800" }}>{p.name ?? "Member"}</Text>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      @{p.username ?? "—"}
+                      {p.markedPaidAt ? ` · says sent ${fmtDate(p.markedPaidAt)}` : ""}
+                      {p.payerReference ? ` · ref ${p.payerReference}` : ""}
+                    </Text>
+                  </View>
+                  <StatusBadge status={p.status} />
+                </View>
+                {p.status === "confirmed" ? (
                   <Pressable
                     disabled={busy !== null}
                     onPress={() =>
-                      Alert.alert("Not received", `Tell ${p.name ?? "this member"} you haven't received their payment?`, [
+                      Alert.alert("Undo confirmation", `Undo the confirmation for ${p.name ?? "this member"}? It goes back to unpaid and they'll be notified.`, [
                         { text: "Cancel", style: "cancel" },
-                        { text: "Not received", style: "destructive", onPress: () => void run(`dispute-${p.userId}`, () => disputeRoundPayment(groupId, p.userId)) },
+                        { text: "Undo", style: "destructive", onPress: () => void run(`undo-${p.userId}`, () => unconfirmRoundPayment(groupId, p.userId)) },
                       ])
                     }
                     style={({ pressed }) => ({
-                      flex: 1,
                       paddingVertical: 10,
                       borderRadius: 12,
                       alignItems: "center",
@@ -254,13 +243,32 @@ export function ThisRound({ groupId, onChanged }: { groupId: string; onChanged?:
                       opacity: pressed || busy !== null ? 0.6 : 1,
                     })}
                   >
-                    <Text style={{ color: colors.danger, fontWeight: "800", fontSize: 12 }}>Not received</Text>
+                    <Text style={{ color: colors.danger, fontWeight: "800", fontSize: 12 }}>Undo</Text>
                   </Pressable>
-                ) : null}
+                ) : (
+                  <Pressable
+                    disabled={busy !== null}
+                    onPress={() =>
+                      Alert.alert("Confirm paid", `Confirm ${p.name ?? "this member"} paid ${fmtMoney(round.amount)} to the recipient?`, [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Confirm", onPress: () => void run(`confirm-${p.userId}`, () => confirmRoundPayment(groupId, p.userId)) },
+                      ])
+                    }
+                    style={({ pressed }) => ({
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      backgroundColor: "rgba(64,229,108,0.18)",
+                      opacity: pressed || busy !== null ? 0.6 : 1,
+                    })}
+                  >
+                    <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 12 }}>Confirm paid</Text>
+                  </Pressable>
+                )}
               </View>
-            ) : null}
-          </View>
-        ))}
+            ))}
+          </>
+        ) : null}
 
         <ErrorText message={error} />
       </View>
