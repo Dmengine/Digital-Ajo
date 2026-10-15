@@ -12,6 +12,7 @@ export const register = async (payload: {
   phone: string;
   username: string;
   password: string;
+  consentAccepted: boolean;
 }): Promise<AuthResponse> => {
   const { data } = await api.post("/auth/register", payload);
   return data as AuthResponse;
@@ -22,15 +23,22 @@ export const me = async (): Promise<{ success: boolean; user: PublicUser }> => {
   return data as { success: boolean; user: PublicUser };
 };
 
+export type Bank = { name: string; code: string };
+
+export const listBanks = async (): Promise<{ success: boolean; banks: Bank[] }> => {
+  const { data } = await api.get("/auth/banks");
+  return data;
+};
+
 export const submitTier1Kyc = async (payload: {
   bvnOrNin: string;
+  identityType?: "bvn" | "nin";
   dob: string;
   residentialAddress: string;
   accountNumber: string;
   bankName: string;
-  bankCode?: string;
-  accountName: string;
+  bankCode: string;
 }) => {
   const { data } = await api.post("/auth/kyc/tier1", payload);
-  return data as { success: boolean; message: string };
+  return data as { success: boolean; message: string; bankAccount: NonNullable<PublicUser["bankAccount"]> };
 };

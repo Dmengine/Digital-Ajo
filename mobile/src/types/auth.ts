@@ -8,9 +8,16 @@ export type PublicUser = {
   basicKycCompleted?: boolean;
   profileImage?: string | null;
   reliabilityScore?: number;
-  wallets?: {
-    main?: number;
-  };
+  bankAccount?: {
+    accountNumber: string;
+    accountName: string | null;
+    bankName: string | null;
+    bankCode?: string | null;
+    /** True only after Paystack bank resolve succeeded. */
+    confirmed: boolean;
+  } | null;
+  /** BVN/NIN details submitted; never verified. */
+  identity?: { type: "bvn" | "nin" | null; last4: string; verified: false } | null;
 };
 
 export type AuthResponse = {

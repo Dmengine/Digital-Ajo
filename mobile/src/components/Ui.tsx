@@ -91,6 +91,28 @@ export function ErrorText({ message }: { message?: string | null }) {
   return <Text style={styles.error}>{message}</Text>;
 }
 
+export const NON_CUSTODIAL_NOTICE =
+  "ContriPay does not hold your money. Contributions are paid directly between group members.";
+
+export function NonCustodialNotice() {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        gap: 10,
+        padding: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "rgba(64,229,108,0.25)",
+        backgroundColor: "rgba(64,229,108,0.06)",
+      }}
+    >
+      <Text style={{ color: colors.accent, fontWeight: "900" }}>₦</Text>
+      <Text style={{ flex: 1, color: colors.muted, fontSize: 13, lineHeight: 19 }}>{NON_CUSTODIAL_NOTICE}</Text>
+    </View>
+  );
+}
+
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return <Text style={styles.sectionLabel}>{children}</Text>;
 }

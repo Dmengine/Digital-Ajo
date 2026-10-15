@@ -9,7 +9,6 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { RegisterScreen } from "./src/screens/RegisterScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
-import { WalletScreen } from "./src/screens/WalletScreen";
 import { GroupsScreen } from "./src/screens/GroupsScreen";
 import { GroupDetailScreen } from "./src/screens/GroupDetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
@@ -22,7 +21,8 @@ const linking = {
   prefixes: ["contripay://"],
   config: {
     screens: {
-      Wallet: "wallet",
+      Dashboard: "",
+      GroupDetail: "groups/:groupId",
     },
   },
 };
@@ -49,7 +49,7 @@ function LoadingScreen() {
           </View>
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>Loading ContriPay</Text>
           <Text style={{ color: colors.muted, textAlign: "center", lineHeight: 20 }}>
-            Preparing your wallet, groups, and secure session.
+            Loading your groups and session.
           </Text>
         </View>
       </View>
@@ -126,14 +126,12 @@ function AppStack({ onLogout }: { onLogout: () => void }) {
       >
         {({ navigation }) => (
           <DashboardScreen
-            onOpenWallet={() => navigation.navigate("Wallet")}
             onOpenGroups={() => navigation.navigate("Groups")}
+            onOpenGroup={(groupId, groupName) => navigation.navigate("GroupDetail", { groupId, groupName })}
             onOpenProfile={() => navigation.navigate("Profile")}
-            onLogout={onLogout}
           />
         )}
       </Stack.Screen>
-      <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Groups" component={GroupsScreen} />
       <Stack.Screen
         name="GroupDetail"

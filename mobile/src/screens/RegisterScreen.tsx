@@ -1,10 +1,24 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import Constants from "expo-constants";
 import { register } from "../api/auth.api";
 import { extractApiMessage } from "../api/client";
-import { Card, ErrorText, Eyebrow, Field, PrimaryButton, Screen, Subtitle, Title } from "../components/Ui";
+import { Card, ErrorText, Eyebrow, Field, NonCustodialNotice, PrimaryButton, Screen, Subtitle, Title } from "../components/Ui";
 import { useAuth } from "../store/AuthContext";
 import { colors } from "../theme/colors";
+
+const privacyUrl = String((Constants.expoConfig?.extra as { privacyUrl?: string } | undefined)?.privacyUrl ?? "").trim();
+
+const PRIVACY_SUMMARY =
+  "We collect your name, email, phone number, payout bank details (account number, bank, account name) and the last 4 digits of your BVN/NIN, so your group can coordinate contributions and pay you on your turn. ContriPay does not hold your money.";
+
+const openPrivacyNotice = () => {
+  if (privacyUrl) {
+    void Linking.openURL(privacyUrl);
+    return;
+  }
+  Alert.alert("Privacy notice", PRIVACY_SUMMARY);
+};
 
 export function RegisterScreen({ onGoLogin }: { onGoLogin: () => void }) {
   const { login } = useAuth();
@@ -13,14 +27,19 @@ export function RegisterScreen({ onGoLogin }: { onGoLogin: () => void }) {
   const [phone, setPhone] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async () => {
+    if (!consentAccepted) {
+      setError("You must accept the privacy notice to create an account.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const data = await register({ name, email, phone, username, password });
+      const data = await register({ name, email, phone, username, password, consentAccepted });
       await login(data.token, data.user);
     } catch (e) {
       setError(extractApiMessage(e));
@@ -45,8 +64,10 @@ export function RegisterScreen({ onGoLogin }: { onGoLogin: () => void }) {
         <View style={{ gap: 8 }}>
           <Eyebrow>ContriPay</Eyebrow>
           <Title>Create your account</Title>
-          <Subtitle>Join the collective and secure your financial future with ContriPay.</Subtitle>
+          <Subtitle>Organise your ajo group: clear turns, payment tracking and reminders.</Subtitle>
         </View>
+
+        <NonCustodialNotice />
 
         <Card style={{ borderRadius: 28 }}>
           <View style={{ gap: 12 }}>
@@ -59,11 +80,37 @@ export function RegisterScreen({ onGoLogin }: { onGoLogin: () => void }) {
             <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.4 }}>Username</Text>
             <Field placeholder="Choose a username" autoCapitalize="none" value={username} onChangeText={setUsername} />
             <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.4 }}>Password</Text>
-            <Field placeholder="Create access key" secureTextEntry value={password} onChangeText={setPassword} />
+            <Field placeholder="Create a password (min. 8 characters)" secureTextEntry value={password} onChangeText={setPassword} />
 
-            <Text style={{ color: colors.muted, lineHeight: 19, fontSize: 12 }}>
-              By continuing, you agree to our terms and privacy policy.
-            </Text>
+            <Pressable
+              onPress={() => setConsentAccepted((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: consentAccepted }}
+              style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 2,
+                  borderColor: consentAccepted ? colors.accent : colors.borderSoft,
+                  backgroundColor: consentAccepted ? colors.accent : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 1,
+                }}
+              >
+                {consentAccepted ? <Text style={{ color: colors.inkOnAccent, fontWeight: "900", fontSize: 13 }}>✓</Text> : null}
+              </View>
+              <Text style={{ flex: 1, color: colors.muted, lineHeight: 19, fontSize: 12 }}>
+                I have read the{" "}
+                <Text onPress={openPrivacyNotice} style={{ color: colors.accent, fontWeight: "800", textDecorationLine: "underline" }}>
+                  privacy notice
+                </Text>{" "}
+                and agree to ContriPay processing my personal data as described there.
+              </Text>
+            </Pressable>
 
             <ErrorText message={error} />
             <PrimaryButton label="Next" onPress={onSubmit} loading={loading} tone="accent" />
@@ -72,15 +119,15 @@ export function RegisterScreen({ onGoLogin }: { onGoLogin: () => void }) {
 
         <View style={{ gap: 10 }}>
           <Card style={{ backgroundColor: colors.panel, borderRadius: 22 }}>
-            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}>Secure encryption</Text>
+            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}>Pay each other directly</Text>
             <Text style={{ color: colors.muted, marginTop: 4, lineHeight: 20 }}>
-              Your data is stored with military-grade encryption and secure access controls.
+              Each round, members send their contribution straight to the recipient's bank account.
             </Text>
           </Card>
           <Card style={{ backgroundColor: colors.panel, borderRadius: 22 }}>
-            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}>Community built</Text>
+            <Text style={{ color: colors.text, fontWeight: "800", fontSize: 16 }}>Save with people you trust</Text>
             <Text style={{ color: colors.muted, marginTop: 4, lineHeight: 20 }}>
-              Join members already using the vault for collective savings goals.
+              Groups are invite-only, so you choose who you save with.
             </Text>
           </Card>
         </View>

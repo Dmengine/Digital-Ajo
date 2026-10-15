@@ -32,7 +32,8 @@
       "apiBaseUrl": "https://digital-ajo.onrender.com/api",
       "eas": {
         "projectId": "e27f8b35-2493-4aca-bd72-6728d223ad69"
-      }
+      },
+      "privacyUrl": ""
     },
     "owner": "oladimeji440"
   }

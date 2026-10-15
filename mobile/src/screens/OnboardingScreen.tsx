@@ -6,20 +6,74 @@ import { colors } from "../theme/colors";
 const slides = [
   {
     eyebrow: "Welcome",
-    title: "ContriPay helps you manage contribution circles clearly.",
-    body: "Track wallet activity, contribution cycles, and payout readiness in one simple flow.",
+    title: "Save together with people you trust.",
+    body: "ContriPay keeps your ajo group organised: whose turn it is, who has paid, and reminders before each due date.",
   },
   {
-    eyebrow: "Groups",
-    title: "Join circles, view member progress, and chat live.",
-    body: "Open any group to see contribution metrics, defaulter signals, and current round details.",
+    eyebrow: "Take turns",
+    title: "Each round, one member receives.",
+    body: "Everyone else sends their contribution straight to that member's bank account, then taps \u201cI've paid\u201d. The recipient confirms when it arrives.",
   },
   {
-    eyebrow: "Wallet",
-    title: "Deposit, verify, and withdraw with safer operations.",
-    body: "Your mobile actions are aligned with backend idempotency and transfer status handling.",
+    eyebrow: "Your money stays yours",
+    title: "ContriPay does not hold your money.",
+    body: "Contributions are paid directly between group members. We only help you coordinate and remind each other.",
   },
 ];
+
+const circleMembers = ["A", "B", "C", "D", "E", "F"];
+
+function SavingCircleIllustration() {
+  const size = 220;
+  const radius = 82;
+  return (
+    <View style={{ alignSelf: "center", width: size, height: size, borderRadius: size / 2, backgroundColor: colors.panelElevated }}>
+      <View
+        style={{
+          position: "absolute",
+          left: size / 2 - 52,
+          top: size / 2 - 52,
+          width: 104,
+          height: 104,
+          borderRadius: 52,
+          backgroundColor: colors.panel,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 10,
+        }}
+      >
+        <Text style={{ color: colors.text, fontSize: 13, fontWeight: "800", textAlign: "center" }}>Take turns</Text>
+        <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "700", textAlign: "center", marginTop: 2 }}>one receives each round</Text>
+      </View>
+      {circleMembers.map((label, i) => {
+        const angle = (i / circleMembers.length) * 2 * Math.PI - Math.PI / 2;
+        const x = size / 2 + radius * Math.cos(angle) - 18;
+        const y = size / 2 + radius * Math.sin(angle) - 18;
+        const receiving = i === 0;
+        return (
+          <View
+            key={label}
+            style={{
+              position: "absolute",
+              left: x,
+              top: y,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: receiving ? colors.accent : colors.panel,
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: receiving ? colors.bg : colors.text, fontWeight: "900" }}>{label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 type OnboardingScreenProps = {
   onFinish: () => void;
@@ -42,15 +96,7 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps): React.JSX
 
         <Card style={{ padding: 20, alignItems: "center" }}>
           <View style={{ gap: 14, width: "100%" }}>
-            <View style={{ alignSelf: "center", width: 220, height: 220, borderRadius: 110, backgroundColor: colors.panelElevated, alignItems: "center", justifyContent: "center" }}>
-              <View style={{ width: 154, height: 154, borderRadius: 28, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Text style={{ color: colors.text, fontSize: 30, fontWeight: "900" }}>₦42,850</Text>
-                <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1.2 }}>Vault balance</Text>
-              </View>
-              <View style={{ position: "absolute", top: 26, right: -8, backgroundColor: colors.panel, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6 }}>
-                <Text style={{ color: colors.accent, fontWeight: "800" }}>+12.4%</Text>
-              </View>
-            </View>
+            <SavingCircleIllustration />
 
             <View style={{ gap: 8, alignItems: "center" }}>
               <Eyebrow>{slide.eyebrow}</Eyebrow>
@@ -95,7 +141,7 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps): React.JSX
 
         <View style={{ alignSelf: "center", backgroundColor: colors.panel, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}>
           <Text style={{ color: colors.muted, fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.3 }}>
-            ContriPay Encryption Level 4
+            Coordination & reminders · no money held
           </Text>
         </View>
       </ScrollView>

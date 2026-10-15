@@ -17,6 +17,7 @@ import { extractApiMessage } from "../api/client";
 import { getSocketBaseUrl } from "../api/client";
 import { Card, ErrorText, Eyebrow, PrimaryButton, Screen, SectionLabel, Subtitle, Title } from "../components/Ui";
 import { useAuth } from "../store/AuthContext";
+import { ThisRound } from "../components/ThisRound";
 import { colors } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -226,7 +227,7 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
             <Eyebrow>{groupName ?? "Group details"}</Eyebrow>
             <Title>{group?.name ?? "Loading group..."}</Title>
             <Subtitle>
-              Review the group ledger, current round, and live chat in one place.
+              See whose turn it is, who has paid, and chat with your group.
             </Subtitle>
           </View>
 
@@ -286,10 +287,10 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
                     }}
                   >
                     <Text style={{ color: colors.warning, fontWeight: "800", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8 }}>
-                      Round Paused Due To Defaulters
+                      Round paused
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      This round is paused because at least one contribution is unresolved.
+                      At least one payment hasn't been confirmed by the recipient yet.
                     </Text>
                     {dashboard.group.roundGraceEndsAt ? (
                       <Text style={{ color: colors.muted, fontSize: 12 }}>
@@ -305,12 +306,14 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
             </Card>
           ) : null}
 
+          {group ? <ThisRound groupId={groupId} onChanged={() => void loadData()} /> : null}
+
           {dashboard ? (
             <Card>
               <SectionLabel>Defaulters</SectionLabel>
               <View style={{ marginTop: 10, gap: 10 }}>
                 <Text style={{ color: colors.muted, fontSize: 12 }}>
-                  Members with failed, unpaid, or defaulted contribution records.
+                  Members with unpaid or defaulted contributions.
                 </Text>
                 {dashboard.defaulters.length === 0 ? (
                   <View style={{ borderRadius: 12, backgroundColor: colors.panelElevated, padding: 12 }}>
@@ -331,7 +334,7 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
                     >
                       <Text style={{ color: colors.text, fontWeight: "800" }}>{member.name ?? member.username ?? "Member"}</Text>
                       <Text style={{ color: colors.muted, fontSize: 12 }}>
-                        @{member.username ?? "unknown"} · failed: {member.failedContributions} · unpaid: {member.unpaidContributions} · defaulted: {member.defaultedContributions}
+                        @{member.username ?? "unknown"} · unpaid: {member.unpaidContributions} · defaulted: {member.defaultedContributions}
                       </Text>
                     </View>
                   ))
@@ -357,12 +360,12 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
                           <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>Order #{member.order}</Text>
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
-                          <Text style={{ color: colors.text, fontWeight: "800" }}>₦{Number(member.totalPaid).toLocaleString()}</Text>
-                          <Text style={{ color: colors.muted, fontSize: 12 }}>{member.hasReceived ? "Received payout" : "Awaiting payout"}</Text>
+                          <Text style={{ color: colors.text, fontWeight: "800" }}>₦{Number(member.totalConfirmedPaid).toLocaleString()}</Text>
+                          <Text style={{ color: colors.muted, fontSize: 12 }}>{member.hasReceived ? "Has had their turn" : "Turn not yet"}</Text>
                         </View>
                       </View>
                       <Text style={{ color: colors.muted, fontSize: 12 }}>
-                        Completed {member.completedContributions} · Pending {member.pendingContributions} · Failed {member.failedContributions} · Unpaid {member.unpaidContributions}
+                        Confirmed {member.confirmedContributions} · Awaiting {member.markedPaidContributions} · Unpaid {member.unpaidContributions} · Defaulted {member.defaultedContributions}
                       </Text>
                     </View>
                   </Pressable>
@@ -379,12 +382,12 @@ export function GroupDetailScreen({ route }: Props): React.JSX.Element {
                   {selectedMember.name ?? selectedMember.username ?? "Member"}
                 </Text>
                 <Text style={{ color: colors.muted }}>@{selectedMember.username ?? "unknown"} · Order #{selectedMember.order}</Text>
-                <Text style={{ color: colors.muted }}>Total paid: ₦{Number(selectedMember.totalPaid).toLocaleString()}</Text>
+                <Text style={{ color: colors.muted }}>Confirmed sent: ₦{Number(selectedMember.totalConfirmedPaid).toLocaleString()}</Text>
                 <Text style={{ color: colors.muted }}>
-                  Completed {selectedMember.completedContributions} · Pending {selectedMember.pendingContributions} · Failed {selectedMember.failedContributions} · Unpaid {selectedMember.unpaidContributions} · Defaulted {selectedMember.defaultedContributions}
+                  Confirmed {selectedMember.confirmedContributions} · Awaiting {selectedMember.markedPaidContributions} · Not paid yet {selectedMember.pendingContributions} · Unpaid {selectedMember.unpaidContributions} · Defaulted {selectedMember.defaultedContributions}
                 </Text>
                 <Text style={{ color: selectedMember.hasReceived ? colors.accent : colors.warning, fontWeight: "700", fontSize: 12 }}>
-                  {selectedMember.hasReceived ? "Payout received" : "Payout pending"}
+                  {selectedMember.hasReceived ? "Has had their turn" : "Turn not yet"}
                 </Text>
               </View>
             </Card>

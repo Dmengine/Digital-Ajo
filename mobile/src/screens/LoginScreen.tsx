@@ -37,15 +37,15 @@ export function LoginScreen({ onGoRegister }: { onGoRegister: () => void }) {
             <Eyebrow>ContriPay</Eyebrow>
             <View style={{ alignItems: "center", gap: 8 }}>
               <Title>ContriPay</Title>
-              <Subtitle>Enter your secure access credentials.</Subtitle>
+              <Subtitle>Sign in to your ajo groups.</Subtitle>
             </View>
           </View>
 
           <Card style={{ borderRadius: 28, padding: 20 }}>
             <View style={{ gap: 14 }}>
               <View style={{ gap: 12 }}>
-                <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.6 }}>Vault ID / Email</Text>
-                <Field placeholder="name@vault.com" autoCapitalize="none" value={emailOrUsername} onChangeText={setEmailOrUsername} />
+                <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.6 }}>Email or username</Text>
+                <Field placeholder="name@example.com" autoCapitalize="none" value={emailOrUsername} onChangeText={setEmailOrUsername} />
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <Text style={{ color: colors.muted, fontWeight: "800", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.6 }}>Access key</Text>
                   <Text style={{ color: colors.brand, fontSize: 11, fontWeight: "800" }}>Forgot key?</Text>
