@@ -70,7 +70,7 @@ export default function Landing() {
                 <span className="text-sm font-bold uppercase tracking-wide">Clear Turns</span>
               </div>
               <div className="mt-3 text-sm text-[#968da0]">
-                Everyone can see whose turn it is and which payments the recipient has confirmed.
+                Everyone can see whose turn it is and whether the group admin has confirmed their payment.
               </div>
             </div>
           </div>
@@ -87,8 +87,8 @@ export default function Landing() {
           },
           {
             icon: HandCoins,
-            title: "Confirmed by the recipient",
-            desc: "Payers tap “I've paid”; the recipient confirms when the money arrives.",
+            title: "Confirmed by your admin",
+            desc: "Members tap “I've sent my payment”; only the group admin can mark a contribution as paid.",
             color: "text-[#40e56c]",
           },
           {

@@ -268,12 +268,12 @@ export default function GroupDetail() {
                 <div className="rounded-lg border border-[#4b4454]/30 bg-[#1d2023] p-6">
                   <h2 className="font-headline text-xl font-bold text-[#e1e2e7]">Member Overview</h2>
                   <p className="mt-2 text-sm text-[#968da0]">
-                    Round {dashQ.data.group.currentRound} · Payments members reported and recipients confirmed. Money moves
+                    Round {dashQ.data.group.currentRound} · Payments confirmed by the group admin. Money moves
                     directly between members, not through ContriPay.
                   </p>
                   {dashQ.data.group.roundStatus === "paused" ? (
                     <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-                      This round is paused because at least one payment hasn't been confirmed by the recipient.
+                      This round is paused because the admin hasn't confirmed every payment yet.
                       {dashQ.data.group.roundGraceEndsAt
                         ? ` Grace period ends ${new Date(dashQ.data.group.roundGraceEndsAt).toLocaleString()}.`
                         : ""}

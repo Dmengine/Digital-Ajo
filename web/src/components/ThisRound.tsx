@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, HandCoins, X } from "lucide-react";
+import { Check, Copy, Send, Undo2 } from "lucide-react";
 import {
   confirmRoundPayment,
-  disputeRoundPayment,
   getCurrentRound,
-  markRoundPaid,
+  markRoundSent,
+  unconfirmRoundPayment,
   type ContributionStatus,
 } from "../api/groups.api";
 import { getAxiosErrorMessage } from "../utils/apiErrors";
@@ -14,8 +14,8 @@ import { NON_CUSTODIAL_NOTICE } from "./NonCustodialNotice";
 
 const STATUS_LABEL: Record<ContributionStatus, string> = {
   pending: "Not paid yet",
-  marked_paid: "Sent · awaiting confirmation",
-  confirmed: "Confirmed",
+  marked_paid: "Awaiting admin confirmation",
+  confirmed: "Confirmed by admin",
   unpaid: "Unpaid",
   defaulted: "Defaulted",
 };
@@ -54,8 +54,8 @@ export function ThisRound({ groupId }: { groupId: string }) {
     void queryClient.invalidateQueries({ queryKey: ["group", groupId] });
   };
 
-  const markMut = useMutation({
-    mutationFn: () => markRoundPaid(groupId, reference),
+  const sentMut = useMutation({
+    mutationFn: () => markRoundSent(groupId, reference),
     onSuccess: () => {
       setReference("");
       invalidate();
@@ -65,8 +65,8 @@ export function ThisRound({ groupId }: { groupId: string }) {
     mutationFn: (payerId: string) => confirmRoundPayment(groupId, payerId),
     onSuccess: invalidate,
   });
-  const disputeMut = useMutation({
-    mutationFn: (payerId: string) => disputeRoundPayment(groupId, payerId),
+  const undoMut = useMutation({
+    mutationFn: (payerId: string) => unconfirmRoundPayment(groupId, payerId),
     onSuccess: invalidate,
   });
 
@@ -104,7 +104,8 @@ export function ThisRound({ groupId }: { groupId: string }) {
 
   const bank = round.recipient.bankAccount;
   const my = round.myPayment;
-  const canMarkPaid = !round.isRecipient && my && ["pending", "unpaid", "defaulted"].includes(my.status);
+  const canMarkSent = my && ["pending", "unpaid", "defaulted"].includes(my.status);
+  const busy = confirmMut.isPending || undoMut.isPending;
 
   const copyAccount = async () => {
     if (!bank) return;
@@ -129,12 +130,15 @@ export function ThisRound({ groupId }: { groupId: string }) {
         <div className="text-right">
           <div className="font-headline text-2xl font-bold text-[#d6baff]">₦{formatNaira(round.amount)}</div>
           <div className="text-xs text-[#968da0]">per member · due {fmtDate(round.dueAt)}</div>
+          <div className="mt-1 text-xs font-bold text-[#cdc2d7]">
+            {round.progress.confirmed} of {round.progress.total} confirmed by admin
+          </div>
         </div>
       </div>
 
       {round.status === "paused" ? (
         <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
-          The due date has passed and some payments aren't confirmed yet.
+          The due date has passed and the admin hasn't confirmed every payment yet.
           {round.graceEndsAt ? ` Grace period ends ${fmtDate(round.graceEndsAt)}.` : ""}
         </div>
       ) : null}
@@ -175,28 +179,33 @@ export function ThisRound({ groupId }: { groupId: string }) {
           )}
         </div>
 
-        {!round.isRecipient && my ? (
+        {my ? (
           <div className="rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 p-4">
             <div className="flex items-center justify-between gap-2">
               <div className="text-xs uppercase tracking-wider text-[#968da0] font-bold">Your payment</div>
               <StatusBadge status={my.status} />
             </div>
             {my.payerReference ? <div className="mt-2 text-xs text-[#968da0]">Reference: {my.payerReference}</div> : null}
-            {my.disputedAt && my.status === "unpaid" ? (
+            {my.status === "marked_paid" ? (
+              <p className="mt-3 text-sm text-[#cdc2d7]">
+                The admin has been notified. It counts as paid only once the admin confirms it.
+              </p>
+            ) : null}
+            {my.unconfirmedAt && my.status === "unpaid" ? (
               <div className="mt-2 text-xs text-amber-300">
-                The recipient said they didn't receive it. Check your transfer, then mark it paid again.
+                The admin removed the confirmation of your payment. Contact the admin if you have already paid.
               </div>
             ) : null}
-            {canMarkPaid ? (
+            {canMarkSent ? (
               <form
                 className="mt-4 space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  markMut.mutate();
+                  sentMut.mutate();
                 }}
               >
                 <p className="text-sm text-[#cdc2d7]">
-                  Send ₦{formatNaira(round.amount)} from your bank app to the account shown, then let the recipient know.
+                  Send ₦{formatNaira(round.amount)} from your bank app to the account shown, then let the admin know.
                 </p>
                 <input
                   value={reference}
@@ -207,71 +216,76 @@ export function ThisRound({ groupId }: { groupId: string }) {
                 />
                 <button
                   type="submit"
-                  disabled={markMut.isPending}
+                  disabled={sentMut.isPending}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-br from-[#40e56c] to-[#02c953] px-4 py-2 text-sm font-bold text-[#003912] hover:opacity-90 disabled:opacity-60"
                 >
-                  <HandCoins size={16} /> {markMut.isPending ? "Saving..." : "I've paid"}
+                  <Send size={16} /> {sentMut.isPending ? "Notifying admin..." : "I've sent my payment"}
                 </button>
-                {markMut.isError ? <div className="text-sm text-[#ffb4ab]">{getAxiosErrorMessage(markMut.error)}</div> : null}
+                {sentMut.isError ? <div className="text-sm text-[#ffb4ab]">{getAxiosErrorMessage(sentMut.error)}</div> : null}
               </form>
             ) : null}
           </div>
         ) : null}
       </div>
 
-      <div className="mt-6">
-        <div className="text-sm font-bold text-[#e1e2e7]">{round.isRecipient ? "Payments to you" : "Member payments"}</div>
-        <ul className="mt-3 space-y-2">
-          {round.payments.map((p) => (
-            <li
-              key={p.userId}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 px-4 py-3"
-            >
-              <div>
-                <div className="font-bold text-[#e1e2e7]">{p.name ?? "Member"}</div>
-                <div className="text-xs text-[#968da0]">
-                  @{p.username ?? "—"}
-                  {p.markedPaidAt ? ` · sent ${fmtDate(p.markedPaidAt)}` : ""}
-                  {round.isRecipient && p.payerReference ? ` · ref ${p.payerReference}` : ""}
+      {data.isAdmin ? (
+        <div className="mt-6">
+          <div className="text-sm font-bold text-[#e1e2e7]">Admin checklist · confirm each member's payment</div>
+          <p className="mt-1 text-xs text-[#968da0]">
+            Only you can mark a contribution as paid. Check that the money reached the recipient before confirming.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {round.payments.map((p) => (
+              <li
+                key={p.userId}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#4b4454]/30 bg-[#323538]/30 px-4 py-3"
+              >
+                <div>
+                  <div className="font-bold text-[#e1e2e7]">{p.name ?? "Member"}</div>
+                  <div className="text-xs text-[#968da0]">
+                    @{p.username ?? "—"}
+                    {p.markedPaidAt ? ` · says sent ${fmtDate(p.markedPaidAt)}` : ""}
+                    {p.payerReference ? ` · ref ${p.payerReference}` : ""}
+                    {p.confirmedAt ? ` · confirmed ${fmtDate(p.confirmedAt)}` : ""}
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge status={p.status} />
-                {round.isRecipient && p.status !== "confirmed" ? (
-                  <button
-                    type="button"
-                    disabled={confirmMut.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Confirm you received ₦${formatNaira(round.amount)} from ${p.name ?? "this member"}?`)) {
-                        confirmMut.mutate(p.userId);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#40e56c]/20 px-3 py-1 text-xs font-bold text-[#40e56c] hover:bg-[#40e56c]/30 disabled:opacity-60"
-                  >
-                    <Check size={14} /> Confirm received
-                  </button>
-                ) : null}
-                {round.isRecipient && p.status === "marked_paid" ? (
-                  <button
-                    type="button"
-                    disabled={disputeMut.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Tell ${p.name ?? "this member"} you haven't received their payment?`)) {
-                        disputeMut.mutate(p.userId);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#ffb4ab]/20 px-3 py-1 text-xs font-bold text-[#ffb4ab] hover:bg-[#ffb4ab]/30 disabled:opacity-60"
-                  >
-                    <X size={14} /> Not received
-                  </button>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-        {confirmMut.isError ? <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(confirmMut.error)}</div> : null}
-        {disputeMut.isError ? <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(disputeMut.error)}</div> : null}
-      </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={p.status} />
+                  {p.status === "confirmed" ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (window.confirm(`Undo the confirmation for ${p.name ?? "this member"}? It will go back to unpaid and they'll be notified.`)) {
+                          undoMut.mutate(p.userId);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#ffb4ab]/20 px-3 py-1 text-xs font-bold text-[#ffb4ab] hover:bg-[#ffb4ab]/30 disabled:opacity-60"
+                    >
+                      <Undo2 size={14} /> Undo
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (window.confirm(`Confirm ${p.name ?? "this member"} paid ₦${formatNaira(round.amount)} to the recipient?`)) {
+                          confirmMut.mutate(p.userId);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#40e56c]/20 px-3 py-1 text-xs font-bold text-[#40e56c] hover:bg-[#40e56c]/30 disabled:opacity-60"
+                    >
+                      <Check size={14} /> Confirm paid
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {confirmMut.isError ? <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(confirmMut.error)}</div> : null}
+          {undoMut.isError ? <div className="mt-3 text-sm text-[#ffb4ab]">{getAxiosErrorMessage(undoMut.error)}</div> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

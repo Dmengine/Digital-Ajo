@@ -16,7 +16,7 @@ const collected: Array<{ what: string; why: string }> = [
   },
   {
     what: "Group activity",
-    why: "Payment status you and other members report (“I've paid”, “confirmed”, “not received”), transfer references you choose to add, group chat messages and your reliability score.",
+    why: "Payment status for each round (your \u201cI've sent my payment\u201d reports and the group admin's confirmations), transfer references you choose to add, group chat messages and your reliability score.",
   },
 ];
 

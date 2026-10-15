@@ -134,7 +134,10 @@ export async function removeGroupMember(
 }
 
 
-/** pending -> marked_paid (payer says sent) -> confirmed (recipient received). unpaid/defaulted during grace. */
+/**
+ * pending -> marked_paid ("I've sent", awaiting admin confirmation, NOT paid) -> confirmed (by group admin).
+ * unpaid = past due or confirmation undone by admin; defaulted = unconfirmed when grace ended.
+ */
 export type ContributionStatus = "pending" | "marked_paid" | "confirmed" | "unpaid" | "defaulted";
 
 export type RoundPayment = {
@@ -144,8 +147,7 @@ export type RoundPayment = {
   status: ContributionStatus;
   markedPaidAt: string | null;
   confirmedAt: string | null;
-  disputedAt: string | null;
-  /** Only visible to the payer themselves and the round's recipient. */
+  unconfirmedAt: string | null;
   payerReference: string | null;
 };
 
@@ -167,6 +169,8 @@ export type CurrentRound = {
       confirmed: boolean;
     } | null;
   };
+  progress: { confirmed: number; total: number };
+  /** Admin-only checklist; empty for other members. */
   payments: RoundPayment[];
   myPayment: RoundPayment | null;
 };
@@ -187,11 +191,13 @@ export async function getCurrentRound(id: string): Promise<CurrentRoundResponse>
   return data;
 }
 
-export async function markRoundPaid(id: string, reference?: string): Promise<{ success: boolean; message: string }> {
+/** Member: "I've sent my payment". Notifies the admin; does NOT count as paid. */
+export async function markRoundSent(id: string, reference?: string): Promise<{ success: boolean; message: string }> {
   const { data } = await api.post(`/groups/${id}/rounds/current/mark-paid`, { reference: reference?.trim() || undefined });
   return data;
 }
 
+/** Group admin only. */
 export async function confirmRoundPayment(
   id: string,
   payerId: string
@@ -200,7 +206,8 @@ export async function confirmRoundPayment(
   return data;
 }
 
-export async function disputeRoundPayment(id: string, payerId: string): Promise<{ success: boolean; message: string }> {
-  const { data } = await api.post(`/groups/${id}/rounds/current/dispute/${payerId}`);
+/** Group admin only: undo a confirmation (back to unpaid). */
+export async function unconfirmRoundPayment(id: string, payerId: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post(`/groups/${id}/rounds/current/unconfirm/${payerId}`);
   return data;
 }
